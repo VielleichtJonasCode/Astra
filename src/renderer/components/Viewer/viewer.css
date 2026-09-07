@@ -1,0 +1,168 @@
+.pageview {
+  position: absolute;
+  left: 50%;
+  box-shadow: var(--shadow-page);
+  background: #fff;
+  border-radius: 2px;
+  overflow: hidden;
+  transform: translateX(-50%);
+}
+.pageview__canvas {
+  display: block;
+}
+.pageview__blank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  background: #fff;
+}
+.pageview__loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+.pageview__num {
+  position: absolute;
+  bottom: 6px;
+  right: 8px;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--dur);
+}
+.pageview:hover .pageview__num {
+  opacity: 1;
+}
+
+.viewer.is-night .pageview__canvas,
+.viewer.is-night .pageview__blank {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+.viewer__scroll {
+  flex: 1;
+  width: 100%;
+  overflow: auto;
+  position: relative;
+}
+.viewer__inner {
+  position: relative;
+  margin: 0 auto;
+}
+
+/* Textlayer (minimal, pdf.js-kompatibel) */
+.textLayer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 1;
+  line-height: 1;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  z-index: 2;
+}
+.textLayer :is(span, br) {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0 0;
+}
+.textLayer span.markedContent {
+  top: 0;
+  height: 0;
+}
+.textLayer ::selection {
+  background: color-mix(in srgb, var(--accent) 42%, transparent);
+}
+.textLayer br::selection {
+  background: transparent;
+}
+
+.pageview__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+}
+
+.viewer__hud {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  background: var(--bg-elevated);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: 10;
+}
+.viewer__hud .zoomval {
+  min-width: 48px;
+  text-align: center;
+  font-size: var(--fs-12);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.viewer__state {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Suche */
+.findbar {
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 6px;
+  background: var(--bg-elevated);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-lg);
+}
+.findbar__input {
+  width: 200px;
+}
+.findbar__count {
+  min-width: 66px;
+  text-align: center;
+  font-size: var(--fs-11);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+.pageview__finds {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.find-hit {
+  position: absolute;
+  background: color-mix(in srgb, var(--anno-yellow) 55%, transparent);
+  border-radius: 1px;
+  mix-blend-mode: multiply;
+}
+.find-hit.is-active {
+  background: color-mix(in srgb, var(--anno-orange) 70%, transparent);
+  outline: 1.5px solid var(--anno-orange);
+}
+

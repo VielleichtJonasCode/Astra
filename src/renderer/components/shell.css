@@ -1,0 +1,254 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: var(--bg-content);
+  color: var(--text-primary);
+}
+
+/* ---------- TitleBar ---------- */
+.titlebar {
+  height: var(--titlebar-h);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-4) 0 84px;
+  border-bottom: 1px solid var(--border-inset);
+  background: var(--bg-window);
+}
+.titlebar__doc {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  -webkit-app-region: drag;
+}
+.titlebar__name {
+  font-size: var(--fs-13);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60%;
+}
+.titlebar__sub {
+  font-size: var(--fs-11);
+  color: var(--text-tertiary);
+}
+.titlebar__group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  -webkit-app-region: no-drag;
+}
+
+/* ---------- TabBar ---------- */
+.tabbar {
+  height: var(--tabbar-h);
+  flex-shrink: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 1px;
+  padding: 0 var(--sp-3);
+  background: var(--bg-window);
+  border-bottom: 1px solid var(--border-inset);
+  overflow-x: auto;
+}
+.tab {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 0 10px;
+  min-width: 130px;
+  max-width: 220px;
+  font-size: var(--fs-12);
+  color: var(--text-secondary);
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+  -webkit-app-region: no-drag;
+}
+.tab.is-active {
+  background: var(--bg-content);
+  color: var(--text-primary);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+.tab:hover:not(.is-active) {
+  background: var(--bg-hover);
+}
+.tab__name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tab__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  flex-shrink: 0;
+}
+.tab__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--r-xs);
+  color: var(--text-tertiary);
+}
+.tab__close:hover {
+  background: var(--bg-active);
+  color: var(--text-primary);
+}
+
+/* ---------- Toolbar ---------- */
+.toolbar {
+  height: var(--toolbar-h);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-4);
+  background: var(--bg-window);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.toolbar::-webkit-scrollbar {
+  display: none;
+}
+.toolbar__spacer {
+  flex: 1;
+  min-width: var(--sp-3);
+}
+.toolgroup {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 3px;
+  border-radius: var(--r-md);
+  background: var(--bg-input);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+/* ---------- Body / regions ---------- */
+.app__body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-inset);
+}
+.sidebar__head,
+.inspector__head {
+  display: flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 var(--sp-4);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+}
+.sidebar__scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--sp-3);
+}
+.viewer {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-canvas);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 0;
+}
+.viewer.is-night {
+  background: #0a0a0b;
+}
+.inspector {
+  width: var(--inspector-w);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-content);
+  border-left: 1px solid var(--border);
+}
+.inspector__scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+/* ---------- StatusBar ---------- */
+.statusbar {
+  height: var(--statusbar-h);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: 0 var(--sp-4);
+  font-size: var(--fs-11);
+  color: var(--text-secondary);
+  background: var(--bg-window);
+  border-top: 1px solid var(--border-inset);
+}
+.statusbar__spacer {
+  flex: 1;
+}
+.statusbar button {
+  color: var(--text-secondary);
+}
+.statusbar button:hover {
+  color: var(--text-primary);
+}
+
+/* ---------- Presentation ---------- */
+.app.is-presentation .titlebar,
+.app.is-presentation .tabbar,
+.app.is-presentation .toolbar,
+.app.is-presentation .sidebar,
+.app.is-presentation .inspector,
+.app.is-presentation .statusbar {
+  display: none;
+}
+.app.is-presentation .viewer {
+  background: #000;
+}
+
+/* ---------- Drop overlay ---------- */
+.dropzone {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border: 3px dashed var(--accent);
+  pointer-events: none;
+}
+.dropzone__label {
+  font-size: var(--fs-16);
+  font-weight: var(--fw-semibold);
+  color: var(--accent);
+  background: var(--bg-elevated);
+  padding: 10px 20px;
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-lg);
+}

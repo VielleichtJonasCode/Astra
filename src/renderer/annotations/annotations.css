@@ -1,0 +1,101 @@
+.anno-root {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+.anno-capture {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  cursor: crosshair;
+}
+.anno-svg {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.anno {
+  position: absolute;
+  pointer-events: none;
+}
+.anno.is-interactive {
+  pointer-events: auto;
+  cursor: move;
+}
+.anno.is-selected {
+  outline: 1px solid var(--accent);
+}
+
+.anno--text {
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 0;
+}
+.anno--text .anno-text-body {
+  width: 100%;
+  height: 100%;
+}
+.anno-textarea {
+  position: absolute;
+  margin: 0;
+  border: 1px solid var(--accent);
+  outline: none;
+  background: rgba(255, 255, 255, 0.92);
+  resize: none;
+  overflow: hidden;
+  pointer-events: auto;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  z-index: 20;
+}
+
+.anno--note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  box-shadow: var(--shadow-sm);
+  color: #000;
+  font-size: 13px;
+}
+
+.anno--image img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  display: block;
+}
+.anno--stamp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid currentColor;
+  border-radius: 4px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.anno-handle {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -5px 0 0 -5px;
+  background: #fff;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  pointer-events: auto;
+  z-index: 22;
+}
+.anno-handle.is-round {
+  border-radius: 50%;
+}
+.anno-draft {
+  position: absolute;
+  border: 1px dashed var(--accent);
+  background: var(--accent-soft);
+  pointer-events: none;
+}

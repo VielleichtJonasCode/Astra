@@ -1,0 +1,33 @@
+appId: com.jonathanweidner.pdfstudio
+productName: PDF Studio
+copyright: Copyright © 2026 Jonathan Weidner
+directories:
+  buildResources: resources
+  output: release
+files:
+  - out/**/*
+  - package.json
+asarUnpack:
+  - '**/*.wasm'
+  - '**/node_modules/mupdf/**'
+  - '**/node_modules/tesseract.js-core/**'
+mac:
+  category: public.app-category.productivity
+  target:
+    - target: dmg
+      arch: arm64
+    - target: zip
+      arch: arm64
+  artifactName: ${productName}-${version}-${arch}.${ext}
+  darkModeSupport: true
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  identity: null
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications

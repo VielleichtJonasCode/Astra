@@ -1,0 +1,141 @@
+/*
+ * Design-Tokens – macOS-nahe Optik.
+ * Light-Werte auf :root, Dark-Werte über prefers-color-scheme.
+ * Die Sidebar bleibt bewusst transparent, damit die Fenster-Vibrancy durchscheint.
+ */
+
+:root {
+  /* Typografie */
+  --font-ui:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Monaco, monospace;
+  --fs-11: 11px;
+  --fs-12: 12px;
+  --fs-13: 13px;
+  --fs-14: 14px;
+  --fs-16: 16px;
+  --fs-20: 20px;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+
+  /* Radius */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+
+  /* Abstände */
+  --sp-1: 2px;
+  --sp-2: 4px;
+  --sp-3: 8px;
+  --sp-4: 12px;
+  --sp-5: 16px;
+  --sp-6: 24px;
+  --sp-7: 32px;
+
+  /* Layout */
+  --titlebar-h: 44px;
+  --tabbar-h: 36px;
+  --toolbar-h: 52px;
+  --statusbar-h: 26px;
+  --sidebar-w: 232px;
+  --inspector-w: 288px;
+
+  /* Bewegungen */
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-fast: 120ms;
+  --dur: 200ms;
+  --dur-slow: 320ms;
+
+  /* Farben – Light */
+  --accent: #0a7cff;
+  --accent-hover: #0e6fe0;
+  --accent-contrast: #ffffff;
+  --accent-soft: rgba(10, 124, 255, 0.14);
+
+  --bg-window: #ececec;
+  --bg-content: #ffffff;
+  --bg-canvas: #f4f4f6;
+  --bg-sidebar: transparent;
+  --bg-elevated: #ffffff;
+  --bg-input: #ffffff;
+  --bg-hover: rgba(0, 0, 0, 0.055);
+  --bg-active: rgba(0, 0, 0, 0.09);
+  --bg-selected: var(--accent);
+  --bg-overlay: rgba(0, 0, 0, 0.28);
+  --bg-scrim: rgba(255, 255, 255, 0.66);
+
+  --text-primary: #1d1d1f;
+  --text-secondary: rgba(0, 0, 0, 0.55);
+  --text-tertiary: rgba(0, 0, 0, 0.36);
+  --text-on-accent: #ffffff;
+  --text-inverse: #ffffff;
+
+  --border: rgba(0, 0, 0, 0.11);
+  --border-strong: rgba(0, 0, 0, 0.22);
+  --border-inset: rgba(0, 0, 0, 0.07);
+  --focus-ring: rgba(10, 124, 255, 0.5);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.16), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 18px 50px rgba(0, 0, 0, 0.26), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  --shadow-page: 0 2px 8px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+
+  --danger: #ff3b30;
+  --warning: #ff9500;
+  --success: #34c759;
+
+  /* Annotationsfarben (Standardpalette) */
+  --anno-yellow: #ffd60a;
+  --anno-green: #30d158;
+  --anno-blue: #0a84ff;
+  --anno-pink: #ff375f;
+  --anno-purple: #bf5af2;
+  --anno-orange: #ff9f0a;
+  --anno-red: #ff453a;
+  --anno-black: #1c1c1e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent: #0a84ff;
+    --accent-hover: #3f9bff;
+    --accent-contrast: #ffffff;
+    --accent-soft: rgba(10, 132, 255, 0.24);
+
+    --bg-window: #1e1e1e;
+    --bg-content: #262627;
+    --bg-canvas: #1b1b1d;
+    --bg-sidebar: transparent;
+    --bg-elevated: #323234;
+    --bg-input: #1c1c1e;
+    --bg-hover: rgba(255, 255, 255, 0.07);
+    --bg-active: rgba(255, 255, 255, 0.12);
+    --bg-overlay: rgba(0, 0, 0, 0.5);
+    --bg-scrim: rgba(0, 0, 0, 0.5);
+
+    --text-primary: #f5f5f7;
+    --text-secondary: rgba(255, 255, 255, 0.6);
+    --text-tertiary: rgba(255, 255, 255, 0.4);
+
+    --border: rgba(255, 255, 255, 0.12);
+    --border-strong: rgba(255, 255, 255, 0.22);
+    --border-inset: rgba(255, 255, 255, 0.08);
+    --focus-ring: rgba(10, 132, 255, 0.6);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 0 0.5px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 22px 60px rgba(0, 0, 0, 0.7), 0 0 0 0.5px rgba(0, 0, 0, 0.5);
+    --shadow-page: 0 2px 12px rgba(0, 0, 0, 0.6), 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur: 0ms;
+    --dur-slow: 0ms;
+  }
+}

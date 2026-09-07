@@ -1,0 +1,13 @@
+node_modules/
+out/
+dist/
+release/
+src/renderer/public/pdfjs/
+src/renderer/public/tesseract/
+*.log
+.DS_Store
+.vite/
+*.local
+.env
+.env.*
+!.env.example
