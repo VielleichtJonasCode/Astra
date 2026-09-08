@@ -32,8 +32,9 @@ export default defineConfig({
       format: 'es'
     },
     optimizeDeps: {
-      // mupdf ships its own wasm loader; let Vite serve it as-is
-      exclude: ['mupdf']
+      // mupdf ships seinen eigenen wasm-Loader; @ffmpeg lädt einen relativen
+      // Worker – beide müssen unverändert ausgeliefert werden.
+      exclude: ['mupdf', '@ffmpeg/ffmpeg', '@ffmpeg/util']
     },
     build: {
       target: 'chrome128',

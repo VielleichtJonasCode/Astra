@@ -21,7 +21,10 @@ async function exists(p: string): Promise<boolean> {
 /** Muss vor app.ready aufgerufen werden. */
 export function registerOcrProtocolScheme(): void {
   protocol.registerSchemesAsPrivileged([
-    { scheme: 'pdfstudio-tessdata', privileges: { standard: true, secure: true, supportFetchAPI: true } }
+    {
+      scheme: 'pdfstudio-tessdata',
+      privileges: { standard: true, secure: true, supportFetchAPI: true }
+    }
   ])
 }
 

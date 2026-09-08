@@ -4,9 +4,12 @@ import { IconButton } from '../common/Button'
 import { Icon, type IconName } from '../common/Icon'
 import { Divider } from '../common/Field'
 import { Popover } from '../common/Popover'
+import { Tooltip } from '../common/Tooltip'
 import { ColorWell } from '../common/ColorWell'
 import { Segmented } from '../common/controls'
 import { cx } from '../../lib/cx'
+import { requestDialog } from '../../store/dialogStore'
+import { pickAndInsertImage } from '../../lib/quickInsert'
 
 interface ToolDef {
   id: ToolId
@@ -41,10 +44,8 @@ const SHAPES: ToolDef[] = [
 ]
 
 const INSERT_TOOLS: ToolDef[] = [
-  { id: 'image', icon: 'image', label: 'Bild einfügen', key: 'I' },
   { id: 'note', icon: 'note', label: 'Notiz', key: 'N' },
-  { id: 'stamp', icon: 'stamp', label: 'Stempel' },
-  { id: 'signature', icon: 'signature', label: 'Unterschrift' }
+  { id: 'stamp', icon: 'stamp', label: 'Stempel' }
 ]
 
 const COLOR_TOOLS: ToolId[] = [
@@ -62,10 +63,18 @@ const COLOR_TOOLS: ToolId[] = [
   'signature'
 ]
 
-const STROKE_TOOLS: ToolId[] = ['ink', 'shape-rect', 'shape-ellipse', 'shape-line', 'shape-arrow', 'signature']
+const STROKE_TOOLS: ToolId[] = [
+  'ink',
+  'shape-rect',
+  'shape-ellipse',
+  'shape-line',
+  'shape-arrow',
+  'signature'
+]
 
 export function Toolbar(): JSX.Element {
-  const { tool, setTool, toolColor, setToolColor, toolStrokeWidth, setToolStrokeWidth } = useUiStore()
+  const { tool, setTool, toolColor, setToolColor, toolStrokeWidth, setToolStrokeWidth } =
+    useUiStore()
   const viewMode = useUiStore((s) => s.viewMode)
   const setViewMode = useUiStore((s) => s.setViewMode)
   const zoomMode = useUiStore((s) => s.zoomMode)
@@ -105,31 +114,33 @@ export function Toolbar(): JSX.Element {
       {renderGroup(MARKUP_TOOLS)}
 
       <div className="toolgroup">
-        <Popover
-          placement="bottom"
-          trigger={
-            <button
-              type="button"
-              className={cx('iconbtn', shapeActive && 'is-active')}
-              aria-label="Formen"
-              disabled={!hasDoc}
-            >
-              <Icon name="shapes" size={17} />
-            </button>
-          }
-        >
-          <div style={{ display: 'flex', gap: 2 }}>
-            {SHAPES.map((s) => (
-              <IconButton
-                key={s.id}
-                name={s.icon}
-                label={s.label}
-                active={tool === s.id}
-                onClick={() => setTool(s.id)}
-              />
-            ))}
-          </div>
-        </Popover>
+        <Tooltip label="Formen – Rechteck, Ellipse, Linie, Pfeil">
+          <Popover
+            placement="bottom"
+            trigger={
+              <button
+                type="button"
+                className={cx('iconbtn', shapeActive && 'is-active')}
+                aria-label="Formen"
+                disabled={!hasDoc}
+              >
+                <Icon name="shapes" size={17} />
+              </button>
+            }
+          >
+            <div style={{ display: 'flex', gap: 2 }}>
+              {SHAPES.map((s) => (
+                <IconButton
+                  key={s.id}
+                  name={s.icon}
+                  label={s.label}
+                  active={tool === s.id}
+                  onClick={() => setTool(s.id)}
+                />
+              ))}
+            </div>
+          </Popover>
+        </Tooltip>
         {INSERT_TOOLS.map((d) => (
           <IconButton
             key={d.id}
@@ -140,6 +151,18 @@ export function Toolbar(): JSX.Element {
             onClick={() => setTool(d.id)}
           />
         ))}
+        <IconButton
+          name="image"
+          label="Bild einfügen (I)"
+          disabled={!hasDoc}
+          onClick={() => pickAndInsertImage()}
+        />
+        <IconButton
+          name="signature-pen"
+          label="Unterschrift einfügen"
+          disabled={!hasDoc}
+          onClick={() => requestDialog('signature')}
+        />
       </div>
 
       <Divider />

@@ -66,7 +66,9 @@ export function AnnotationProperties({ docKey }: { docKey: string }): JSX.Elemen
             <Field label="Hintergrund">
               <Checkbox
                 checked={!!a.cover}
-                onChange={(on) => set({ cover: on ? { color: '#ffffff' } : null })}
+                onChange={(on) =>
+                  set({ cover: on ? { color: '#ffffff', rect: a.cover?.rect } : null })
+                }
               >
                 Fläche darunter decken
               </Checkbox>
@@ -75,7 +77,7 @@ export function AnnotationProperties({ docKey }: { docKey: string }): JSX.Elemen
               <Field label="Deckfarbe">
                 <ColorWell
                   value={a.cover.color}
-                  onChange={(color) => set({ cover: { color } })}
+                  onChange={(color) => set({ cover: { color, rect: a.cover?.rect } })}
                 />
               </Field>
             )}
@@ -104,10 +106,7 @@ export function AnnotationProperties({ docKey }: { docKey: string }): JSX.Elemen
             </Field>
             {(a.kind === 'rect' || a.kind === 'ellipse') && (
               <Field label="Füllung">
-                <Checkbox
-                  checked={!!a.fill}
-                  onChange={(on) => set({ fill: on ? a.stroke : null })}
-                >
+                <Checkbox checked={!!a.fill} onChange={(on) => set({ fill: on ? a.stroke : null })}>
                   Füllen
                 </Checkbox>
               </Field>
@@ -126,7 +125,13 @@ export function AnnotationProperties({ docKey }: { docKey: string }): JSX.Elemen
               <ColorWell value={a.color} onChange={(color) => set({ color })} />
             </Field>
             <Field label="Stärke">
-              <Slider value={a.width} min={0.5} max={16} step={0.5} onChange={(width) => set({ width })} />
+              <Slider
+                value={a.width}
+                min={0.5}
+                max={16}
+                step={0.5}
+                onChange={(width) => set({ width })}
+              />
             </Field>
           </>
         )}
@@ -174,7 +179,13 @@ export function AnnotationProperties({ docKey }: { docKey: string }): JSX.Elemen
           />
         </Field>
         <Field label="Position">
-          <span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontVariantNumeric: 'tabular-nums' }}>
+          <span
+            style={{
+              fontSize: 11,
+              color: 'var(--text-tertiary)',
+              fontVariantNumeric: 'tabular-nums'
+            }}
+          >
             {Math.round(a.rect.x)}, {Math.round(a.rect.y)} · {Math.round(a.rect.width)}×
             {Math.round(a.rect.height)} pt
           </span>

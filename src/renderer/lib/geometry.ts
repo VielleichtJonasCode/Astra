@@ -30,12 +30,7 @@ export function rectContains(r: Rect, p: Point): boolean {
 }
 
 export function rectsIntersect(a: Rect, b: Rect): boolean {
-  return (
-    a.x < b.x + b.width &&
-    a.x + a.width > b.x &&
-    a.y < b.y + b.height &&
-    a.y + a.height > b.y
-  )
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y
 }
 
 export function unionRect(a: Rect, b: Rect): Rect {

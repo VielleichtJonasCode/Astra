@@ -90,7 +90,15 @@ export function ResizeDialog({ onClose }: { onClose: () => void }): JSX.Element 
             <Slider value={scale} min={10} max={400} step={5} onChange={setScale} />
           </Field>
           <Field label="Genau">
-            <NumberInput value={scale} min={10} max={400} step={5} suffix=" %" onChange={setScale} width={90} />
+            <NumberInput
+              value={scale}
+              min={10}
+              max={400}
+              step={5}
+              suffix=" %"
+              onChange={setScale}
+              width={90}
+            />
           </Field>
         </FieldGroup>
       ) : (

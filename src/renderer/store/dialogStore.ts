@@ -20,6 +20,7 @@ export type DialogId =
   | 'insertImage'
   | 'insertPdf'
   | 'extract'
+  | 'signature'
 
 interface DialogState {
   active: DialogId | null

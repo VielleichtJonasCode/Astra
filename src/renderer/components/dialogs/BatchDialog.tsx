@@ -100,7 +100,11 @@ export function BatchDialog({ onClose }: { onClose: () => void }): JSX.Element {
           </Button>
           <span className="spacer" />
           <Button onClick={onClose}>Abbrechen</Button>
-          <Button variant="primary" disabled={busy || files.length === 0} onClick={() => void run()}>
+          <Button
+            variant="primary"
+            disabled={busy || files.length === 0}
+            onClick={() => void run()}
+          >
             {busy ? `${done}/${files.length}` : 'Starten …'}
           </Button>
         </>

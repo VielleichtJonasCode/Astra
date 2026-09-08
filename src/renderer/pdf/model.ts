@@ -67,8 +67,12 @@ export interface TextAnnotation extends BaseAnnotation {
   kind: 'text'
   text: string
   style: TextStyle
-  /** Deckendes Rechteck darunter (für "Text bearbeiten" / überschreiben). */
-  cover?: { color: string } | null
+  /**
+   * Deckendes Rechteck darunter (für "Text bearbeiten" / überschreiben).
+   * `rect` ist unabhängig vom Textfeld in Seiten-Koordinaten; fehlt es,
+   * wird das Textfeld-Rechteck selbst gedeckt.
+   */
+  cover?: { color: string; rect?: Rect } | null
 }
 
 export interface MarkupAnnotation extends BaseAnnotation {
@@ -151,12 +155,7 @@ export interface DocMetadata {
 }
 
 export type OverlayCorner =
-  | 'top-left'
-  | 'top-center'
-  | 'top-right'
-  | 'bottom-left'
-  | 'bottom-center'
-  | 'bottom-right'
+  'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right'
 
 export interface WatermarkConfig {
   kind: 'text' | 'image'
@@ -267,9 +266,7 @@ export function pageDisplaySize(page: PageModel): { width: number; height: numbe
     width: base.width * (page.scale ?? 1),
     height: base.height * (page.scale ?? 1)
   }
-  const box = page.cropBox
-    ? { width: page.cropBox.width, height: page.cropBox.height }
-    : scaled
+  const box = page.cropBox ? { width: page.cropBox.width, height: page.cropBox.height } : scaled
   const rotated = page.rotation === 90 || page.rotation === 270
   return rotated ? { width: box.height, height: box.width } : box
 }

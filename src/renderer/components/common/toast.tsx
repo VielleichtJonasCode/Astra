@@ -51,8 +51,7 @@ function ToastRow({ item }: { item: ToastItem }): JSX.Element {
     return () => clearTimeout(t)
   }, [item, dismiss])
 
-  const iconName =
-    item.kind === 'error' ? 'info' : item.kind === 'success' ? 'check' : 'info'
+  const iconName = item.kind === 'error' ? 'info' : item.kind === 'success' ? 'check' : 'info'
 
   return (
     <div className={cx('toast', `toast--${item.kind}`)} onClick={() => dismiss(item.id)}>

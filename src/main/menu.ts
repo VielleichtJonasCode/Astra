@@ -9,7 +9,12 @@ export function buildAppMenu(getWindow: () => BrowserWindow | null): void {
   const isMac = process.platform === 'darwin'
   const devExtras: MenuItemConstructorOptions[] = app.isPackaged
     ? []
-    : [{ type: 'separator' }, { role: 'reload' }, { role: 'forceReload' }, { role: 'toggleDevTools' }]
+    : [
+        { type: 'separator' },
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' }
+      ]
 
   const template: MenuItemConstructorOptions[] = [
     ...(isMac
@@ -19,7 +24,11 @@ export function buildAppMenu(getWindow: () => BrowserWindow | null): void {
             submenu: [
               { role: 'about', label: `Über ${app.name}` },
               { type: 'separator' },
-              { label: 'Einstellungen…', accelerator: 'Cmd+,', click: () => send('app.preferences') },
+              {
+                label: 'Einstellungen…',
+                accelerator: 'Cmd+,',
+                click: () => send('app.preferences')
+              },
               { type: 'separator' },
               { role: 'services' },
               { type: 'separator' },
@@ -48,7 +57,11 @@ export function buildAppMenu(getWindow: () => BrowserWindow | null): void {
           accelerator: 'Shift+CmdOrCtrl+S',
           click: () => send('file.saveAs')
         },
-        { label: 'Exportieren…', accelerator: 'Shift+CmdOrCtrl+E', click: () => send('file.export') },
+        {
+          label: 'Exportieren…',
+          accelerator: 'Shift+CmdOrCtrl+E',
+          click: () => send('file.export')
+        },
         { type: 'separator' },
         { label: 'PDFs zusammenführen…', click: () => send('tools.merge') },
         { label: 'PDF teilen…', click: () => send('tools.split') },
@@ -78,7 +91,11 @@ export function buildAppMenu(getWindow: () => BrowserWindow | null): void {
     {
       label: 'Seiten',
       submenu: [
-        { label: 'Nach rechts drehen', accelerator: 'CmdOrCtrl+R', click: () => send('page.rotateCW') },
+        {
+          label: 'Nach rechts drehen',
+          accelerator: 'CmdOrCtrl+R',
+          click: () => send('page.rotateCW')
+        },
         {
           label: 'Nach links drehen',
           accelerator: 'Shift+CmdOrCtrl+R',
@@ -86,7 +103,11 @@ export function buildAppMenu(getWindow: () => BrowserWindow | null): void {
         },
         { type: 'separator' },
         { label: 'Seite duplizieren', click: () => send('page.duplicate') },
-        { label: 'Seite löschen', accelerator: 'CmdOrCtrl+Backspace', click: () => send('page.delete') },
+        {
+          label: 'Seite löschen',
+          accelerator: 'CmdOrCtrl+Backspace',
+          click: () => send('page.delete')
+        },
         { type: 'separator' },
         { label: 'Leere Seite einfügen', click: () => send('page.insertBlank') },
         { label: 'Seite aus Bild…', click: () => send('page.insertImage') },
@@ -100,11 +121,29 @@ export function buildAppMenu(getWindow: () => BrowserWindow | null): void {
     {
       label: 'Darstellung',
       submenu: [
+        {
+          label: 'Astra-Startseite',
+          accelerator: 'Shift+CmdOrCtrl+H',
+          click: () => send('view.home')
+        },
+        { type: 'separator' },
         { label: 'Vergrößern', accelerator: 'CmdOrCtrl+Plus', click: () => send('view.zoomIn') },
         { label: 'Verkleinern', accelerator: 'CmdOrCtrl+-', click: () => send('view.zoomOut') },
-        { label: 'Tatsächliche Größe', accelerator: 'CmdOrCtrl+0', click: () => send('view.zoomReset') },
-        { label: 'An Breite anpassen', accelerator: 'CmdOrCtrl+1', click: () => send('view.fitWidth') },
-        { label: 'An Seite anpassen', accelerator: 'CmdOrCtrl+2', click: () => send('view.fitPage') },
+        {
+          label: 'Tatsächliche Größe',
+          accelerator: 'CmdOrCtrl+0',
+          click: () => send('view.zoomReset')
+        },
+        {
+          label: 'An Breite anpassen',
+          accelerator: 'CmdOrCtrl+1',
+          click: () => send('view.fitWidth')
+        },
+        {
+          label: 'An Seite anpassen',
+          accelerator: 'CmdOrCtrl+2',
+          click: () => send('view.fitPage')
+        },
         { type: 'separator' },
         { label: 'Einzelseite', click: () => send('view.single') },
         { label: 'Fortlaufend', click: () => send('view.continuous') },
@@ -116,7 +155,11 @@ export function buildAppMenu(getWindow: () => BrowserWindow | null): void {
           accelerator: 'CmdOrCtrl+Alt+N',
           click: () => send('view.night')
         },
-        { label: 'Präsentation', accelerator: 'CmdOrCtrl+Alt+P', click: () => send('view.presentation') },
+        {
+          label: 'Präsentation',
+          accelerator: 'CmdOrCtrl+Alt+P',
+          click: () => send('view.presentation')
+        },
         { role: 'togglefullscreen', label: 'Vollbild' },
         ...devExtras
       ]
@@ -125,7 +168,11 @@ export function buildAppMenu(getWindow: () => BrowserWindow | null): void {
       label: 'Werkzeuge',
       submenu: [
         { label: 'Text hinzufügen', accelerator: 'T', click: () => send('tool.text') },
-        { label: 'Vorhandenen Text bearbeiten', accelerator: 'E', click: () => send('tool.editText') },
+        {
+          label: 'Vorhandenen Text bearbeiten',
+          accelerator: 'E',
+          click: () => send('tool.editText')
+        },
         { label: 'Text schwärzen / löschen', accelerator: 'B', click: () => send('tool.redact') },
         { label: 'Redaktions-Assistent…', click: () => send('tools.redactAssistant') },
         { type: 'separator' },
@@ -154,9 +201,17 @@ export function buildAppMenu(getWindow: () => BrowserWindow | null): void {
       role: 'help',
       label: 'Hilfe',
       submenu: [
-        { label: 'PDF Studio – Handbuch', click: () => send('help.docs') },
-        { label: 'Tastaturkurzbefehle', accelerator: 'CmdOrCtrl+/', click: () => send('help.shortcuts') },
-        ...(isMac ? [] : ([{ label: 'Über PDF Studio', click: () => send('help.about') }] as MenuItemConstructorOptions[]))
+        { label: 'Astra – Handbuch', click: () => send('help.docs') },
+        {
+          label: 'Tastaturkurzbefehle',
+          accelerator: 'CmdOrCtrl+/',
+          click: () => send('help.shortcuts')
+        },
+        ...(isMac
+          ? []
+          : ([
+              { label: 'Über Astra', click: () => send('help.about') }
+            ] as MenuItemConstructorOptions[]))
       ]
     }
   ]

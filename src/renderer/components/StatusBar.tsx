@@ -14,7 +14,9 @@ export function StatusBar(): JSX.Element {
   return (
     <footer className="statusbar">
       <span>
-        {pageCount > 0 ? `Seite ${Math.min(currentPage, pageCount)} von ${pageCount}` : 'Kein Dokument'}
+        {pageCount > 0
+          ? `Seite ${Math.min(currentPage, pageCount)} von ${pageCount}`
+          : 'Kein Dokument'}
       </span>
       {size && (
         <span>
@@ -25,7 +27,12 @@ export function StatusBar(): JSX.Element {
 
       <span className="statusbar__spacer" />
 
-      <IconButton name={nightMode ? 'sun' : 'moon'} label="Nachtmodus" onClick={toggleNight} size={14} />
+      <IconButton
+        name={nightMode ? 'sun' : 'moon'}
+        label="Nachtmodus"
+        onClick={toggleNight}
+        size={14}
+      />
       <IconButton name="zoom-out" label="Verkleinern" onClick={zoomOut} size={14} />
       <button
         style={{ minWidth: 46, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}

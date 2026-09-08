@@ -1,10 +1,13 @@
+import { useEffect, useMemo } from 'react'
 import type { Annotation } from '../pdf/model'
 import { cssFontFamily, cssFontStyle, cssFontWeight } from '../pdf/fonts'
 import { bytesToBlob } from '../lib/bytes'
 import { useDocStore } from '../store/docStore'
-import { useMemo } from 'react'
 
-/** Reine Darstellung einer Annotation im Overlay (PDF-Punkt-Koordinaten × scale). */
+/**
+ * Reine Darstellung einer Annotation – füllt den positionierten Wrapper
+ * (der Wrapper in AnnotationLayer setzt left/top/width/height).
+ */
 export function AnnotationView({
   annotation: a,
   scale,
@@ -14,46 +17,33 @@ export function AnnotationView({
   scale: number
   docKey: string
 }): JSX.Element | null {
-  const px = (v: number): number => v * scale
-  const style: React.CSSProperties = {
-    left: px(a.rect.x),
-    top: px(a.rect.y),
-    width: px(a.rect.width),
-    height: px(a.rect.height),
-    opacity: a.opacity ?? 1
-  }
+  const fill: React.CSSProperties = { position: 'absolute', inset: 0 }
 
   if (a.kind === 'text') {
     return (
       <div
         className="anno anno--text"
-        data-anno={a.id}
         style={{
-          ...style,
+          ...fill,
           color: a.style.color,
           fontFamily: cssFontFamily(a.style.font),
           fontWeight: cssFontWeight(a.style.font),
           fontStyle: cssFontStyle(a.style.font),
-          fontSize: px(a.style.size),
+          fontSize: a.style.size * scale,
           lineHeight: a.style.lineHeight,
           textAlign: a.style.align,
-          background: a.cover ? a.cover.color : 'transparent'
+          background: a.cover && !a.cover.rect ? a.cover.color : 'transparent'
         }}
       >
-        {a.text || ' '}
+        {a.text || ' '}
       </div>
     )
   }
 
   if (a.kind === 'note') {
     return (
-      <div
-        className="anno anno--note"
-        data-anno={a.id}
-        style={{ ...style, background: a.color }}
-        title={a.text}
-      >
-        <span style={{ fontSize: Math.min(px(a.rect.height) * 0.7, 14) }}>✎</span>
+      <div className="anno anno--note" style={{ ...fill, background: a.color }} title={a.text}>
+        <span style={{ fontSize: Math.min(a.rect.height * scale * 0.7, 14) }}>✎</span>
       </div>
     )
   }
@@ -62,8 +52,7 @@ export function AnnotationView({
     return (
       <div
         className="anno anno--stamp"
-        data-anno={a.id}
-        style={{ ...style, color: a.color, fontSize: Math.min(px(a.rect.height) * 0.42, 18) }}
+        style={{ ...fill, color: a.color, fontSize: Math.min(a.rect.height * scale * 0.42, 18) }}
       >
         {a.label}
       </div>
@@ -71,21 +60,57 @@ export function AnnotationView({
   }
 
   if (a.kind === 'image') {
-    return <ImageAnnoView id={a.id} assetId={a.assetId} docKey={docKey} style={style} />
+    return (
+      <AssetImage assetId={a.assetId} docKey={docKey} className="anno anno--image" style={fill} />
+    )
+  }
+
+  if (a.kind === 'signature') {
+    if (a.assetId) {
+      return (
+        <AssetImage
+          assetId={a.assetId}
+          docKey={docKey}
+          className="anno anno--signature"
+          style={fill}
+        />
+      )
+    }
+    return (
+      <svg
+        className="anno anno--signature"
+        style={fill}
+        viewBox="0 0 1 1"
+        preserveAspectRatio="none"
+      >
+        {(a.paths ?? []).map((path, i) => (
+          <polyline
+            key={i}
+            points={path.map((p) => `${p.x},${p.y}`).join(' ')}
+            fill="none"
+            stroke={a.color}
+            strokeWidth={0.012}
+            vectorEffect="non-scaling-stroke"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ))}
+      </svg>
+    )
   }
 
   return null
 }
 
-function ImageAnnoView({
-  id,
+function AssetImage({
   assetId,
   docKey,
+  className,
   style
 }: {
-  id: string
   assetId: string
   docKey: string
+  className: string
   style: React.CSSProperties
 }): JSX.Element | null {
   const asset = useDocStore((s) => s.docs[docKey]?.assets[assetId])
@@ -93,9 +118,14 @@ function ImageAnnoView({
     () => (asset ? URL.createObjectURL(bytesToBlob(asset.bytes, asset.mime)) : null),
     [asset]
   )
+  useEffect(() => {
+    return () => {
+      if (url) URL.revokeObjectURL(url)
+    }
+  }, [url])
   if (!url) return null
   return (
-    <div className="anno anno--image" data-anno={id} style={style}>
+    <div className={className} style={style}>
       <img src={url} alt="" draggable={false} />
     </div>
   )
@@ -142,9 +172,7 @@ export function AnnotationSvgShape({ a }: { a: Annotation }): JSX.Element | null
       </>
     )
   }
-  if (a.kind === 'ink' || a.kind === 'signature') {
-    const color = a.kind === 'ink' ? a.color : a.color
-    const w = a.kind === 'ink' ? a.width : 1.6
+  if (a.kind === 'ink') {
     return (
       <>
         {(a.paths ?? []).map((path, i) => (
@@ -152,8 +180,8 @@ export function AnnotationSvgShape({ a }: { a: Annotation }): JSX.Element | null
             key={i}
             points={path.map((p) => `${r.x + p.x * r.width},${r.y + p.y * r.height}`).join(' ')}
             fill="none"
-            stroke={color}
-            strokeWidth={w}
+            stroke={a.color}
+            strokeWidth={a.width}
             strokeLinecap="round"
             strokeLinejoin="round"
           />
@@ -196,7 +224,15 @@ export function AnnotationSvgShape({ a }: { a: Annotation }): JSX.Element | null
     const head = 7 + a.strokeWidth * 1.6
     return (
       <>
-        <line x1={p0.x} y1={p0.y} x2={p1.x} y2={p1.y} stroke={a.stroke} strokeWidth={a.strokeWidth} strokeLinecap="round" />
+        <line
+          x1={p0.x}
+          y1={p0.y}
+          x2={p1.x}
+          y2={p1.y}
+          stroke={a.stroke}
+          strokeWidth={a.strokeWidth}
+          strokeLinecap="round"
+        />
         {a.kind === 'arrow' &&
           [Math.PI - 0.4, Math.PI + 0.4].map((off, i) => (
             <line

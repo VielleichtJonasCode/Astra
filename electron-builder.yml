@@ -1,6 +1,6 @@
-appId: com.jonathanweidner.pdfstudio
-productName: PDF Studio
-copyright: Copyright © 2026 Jonathan Weidner
+appId: com.jonathanweidner.astra
+productName: Astra
+copyright: '© 2026 Jonathan Weidner — AGPL-3.0-or-later'
 directories:
   buildResources: resources
   output: release
@@ -11,8 +11,24 @@ asarUnpack:
   - '**/*.wasm'
   - '**/node_modules/mupdf/**'
   - '**/node_modules/tesseract.js-core/**'
+extraResources:
+  - from: resources/bin
+    to: bin
+    filter:
+      - '**/*'
+fileAssociations:
+  - ext: pdf
+    name: PDF-Dokument
+    description: PDF im Astra PDF-Editor öffnen
+    role: Editor
+    rank: Alternate
+    mimeType: application/pdf
+    icon: resources/icon.png
 mac:
   category: public.app-category.productivity
+  extendInfo:
+    NSCalendarsUsageDescription: Astra zeigt im Studienplaner deine Vorlesungen und Klausuren aus dem Kalender an.
+    NSCalendarsFullAccessUsageDescription: Astra zeigt im Studienplaner deine Vorlesungen und Klausuren aus dem Kalender an.
   target:
     - target: dmg
       arch: arm64

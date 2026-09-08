@@ -99,10 +99,6 @@ export function createInk(
   return { id: nanoid(10), pageId, rect: bbox, kind: 'ink', color, width, paths }
 }
 
-export function createImageAnnotation(
-  pageId: string,
-  rect: Rect,
-  assetId: string
-): Annotation {
+export function createImageAnnotation(pageId: string, rect: Rect, assetId: string): Annotation {
   return { id: nanoid(10), pageId, rect, kind: 'image', assetId }
 }

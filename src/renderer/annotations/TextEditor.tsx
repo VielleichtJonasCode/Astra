@@ -35,6 +35,10 @@ export function TextEditor({
     if (Math.abs(heightPt - a.rect.height) > 1) onResize(heightPt)
   }, [a.text, a.rect.height, scale, onResize])
 
+  // Bei „Text überschreiben" (a.cover gesetzt) die Vorschau so ausrichten,
+  // dass sie mit dem späteren Export deckungsgleich ist.
+  const isOverwrite = Boolean(a.cover)
+
   return (
     <textarea
       ref={ref}
@@ -58,7 +62,10 @@ export function TextEditor({
         fontWeight: cssFontWeight(a.style.font),
         fontStyle: cssFontStyle(a.style.font),
         fontSize: a.style.size * scale,
-        lineHeight: a.style.lineHeight,
+        lineHeight: isOverwrite ? 1 : a.style.lineHeight,
+        paddingTop: isOverwrite ? a.style.size * 0.2 * scale : undefined,
+        paddingLeft: isOverwrite ? 0 : undefined,
+        background: isOverwrite ? (a.cover?.color ?? '#ffffff') : undefined,
         textAlign: a.style.align
       }}
     />

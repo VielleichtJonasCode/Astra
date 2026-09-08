@@ -2,10 +2,19 @@ import { useEffect } from 'react'
 import type { MenuAction } from '@shared/types'
 import { useDocStore } from '../store/docStore'
 import { useUiStore, type ToolId } from '../store/uiStore'
-import { openPaths, openViaDialog } from './fileActions'
 import { toast } from '../components/common/toast'
 import { requestDialog, type DialogId } from '../store/dialogStore'
-import { saveActive, saveActiveAs, exportActive } from './saveActions'
+import { useShellStore } from '../store/shellStore'
+
+// Schwergewichtige Module (PDF-Export-Pipeline usw.) erst bei Bedarf laden.
+const openViaDialog = (): Promise<void> => import('./fileActions').then((m) => m.openViaDialog())
+const openPaths = (p: string[]): Promise<void> =>
+  import('./fileActions').then((m) => m.openPaths(p))
+const pickAndInsertImage = (): Promise<void> =>
+  import('./quickInsert').then((m) => m.pickAndInsertImage())
+const saveActive = (): Promise<void> => import('./saveActions').then((m) => m.saveActive())
+const saveActiveAs = (): Promise<void> => import('./saveActions').then((m) => m.saveActiveAs())
+const exportActive = (): Promise<void> => import('./saveActions').then((m) => m.exportActive())
 
 const TOOL_ACTIONS: Partial<Record<MenuAction, ToolId>> = {
   'tool.hand': 'hand',
@@ -18,10 +27,8 @@ const TOOL_ACTIONS: Partial<Record<MenuAction, ToolId>> = {
   'tool.strike': 'strikeout',
   'tool.draw': 'ink',
   'tool.shapes': 'shape-rect',
-  'tool.image': 'image',
   'tool.note': 'note',
-  'tool.stamp': 'stamp',
-  'tool.signature': 'signature'
+  'tool.stamp': 'stamp'
 }
 
 const DIALOG_ACTIONS: Partial<Record<MenuAction, DialogId>> = {
@@ -37,6 +44,7 @@ const DIALOG_ACTIONS: Partial<Record<MenuAction, DialogId>> = {
   'tools.ocr': 'ocr',
   'tools.batch': 'batch',
   'tools.redactAssistant': 'redactAssistant',
+  'tool.signature': 'signature',
   'file.export': 'export',
   'help.shortcuts': 'shortcuts',
   'help.about': 'about',
@@ -48,12 +56,23 @@ function handleMenuAction(action: MenuAction): void {
   const docs = useDocStore.getState()
   const key = docs.activeKey
 
+  if (action === 'tool.image') {
+    if (key) pickAndInsertImage()
+    else toast.info('Bitte zuerst ein PDF öffnen.')
+    return
+  }
   if (TOOL_ACTIONS[action]) {
     ui.setTool(TOOL_ACTIONS[action] as ToolId)
     return
   }
   if (DIALOG_ACTIONS[action]) {
-    if (!key && action !== 'tools.merge' && action !== 'tools.batch' && !action.startsWith('help') && action !== 'app.preferences') {
+    if (
+      !key &&
+      action !== 'tools.merge' &&
+      action !== 'tools.batch' &&
+      !action.startsWith('help') &&
+      action !== 'app.preferences'
+    ) {
       toast.info('Bitte zuerst ein PDF öffnen.')
       return
     }
@@ -121,6 +140,9 @@ function handleMenuAction(action: MenuAction): void {
     case 'view.night':
       ui.toggleNight()
       break
+    case 'view.home':
+      useShellStore.getState().setView(useShellStore.getState().view === 'home' ? 'pdf' : 'home')
+      break
     case 'view.presentation':
       ui.setPresentation(!ui.presentation)
       break
@@ -171,16 +193,18 @@ function rotateTarget(key: string, delta: 90 | -90): void {
 /** Buchstaben-Kurzbefehle, die die native Menüleiste nicht abdeckt. */
 function handleKey(e: KeyboardEvent): void {
   const target = e.target as HTMLElement
-  if (
-    target.tagName === 'INPUT' ||
-    target.tagName === 'TEXTAREA' ||
-    target.isContentEditable
-  ) {
+  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
     return
   }
   if (e.metaKey || e.ctrlKey || e.altKey) return
 
   const ui = useUiStore.getState()
+  const key = e.key.toLowerCase()
+  if (key === 'i') {
+    e.preventDefault()
+    if (useDocStore.getState().activeKey) pickAndInsertImage()
+    return
+  }
   const map: Record<string, ToolId> = {
     v: 'select',
     t: 'text',
@@ -189,10 +213,8 @@ function handleKey(e: KeyboardEvent): void {
     h: 'highlight',
     d: 'ink',
     s: 'shape-rect',
-    i: 'image',
     n: 'note'
   }
-  const key = e.key.toLowerCase()
   if (map[key]) {
     e.preventDefault()
     ui.setTool(map[key])
@@ -207,6 +229,16 @@ export function useAppWiring(): void {
     const offMenu = window.api.onMenu((action) => handleMenuAction(action))
     const offOpen = window.api.onOpenFiles((paths) => void openPaths(paths))
     window.addEventListener('keydown', handleKey)
+    // Beim Start per "Öffnen mit" übergebene Dateien abholen (Race-sicher)
+    window.api
+      .consumePendingFiles()
+      .then((paths) => {
+        if (paths.length) void openPaths(paths)
+      })
+      .catch(() => undefined)
+    // Nur für visuelle Verifikation: #dialog=<id> öffnet direkt einen Dialog.
+    const dlg = /dialog=([a-zA-Z]+)/.exec(location.hash)?.[1]
+    if (dlg) requestDialog(dlg as DialogId)
     return () => {
       offMenu()
       offOpen()

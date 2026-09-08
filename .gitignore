@@ -11,3 +11,21 @@ src/renderer/public/tesseract/
 .env
 .env.*
 !.env.example
+src/renderer/public/ffmpeg/
+# Kompilierter Apple-Vision-OCR-Helfer (Build-Artefakt, wird lokal erzeugt)
+resources/bin/
+
+# --- Private Signaturschlüssel / Geheimnisse: NIEMALS committen ---
+# Der Astra-Signaturschlüssel liegt normalerweise außerhalb des Repos
+# (~/Library/Application Support/astra/secrets/). Falls Schlüsseldateien
+# doch im Projektordner landen, hier abfangen:
+*.astrakey
+*.pem
+*.p12
+*.pfx
+signingKey.json
+secrets/
+**/secrets/
+astra-signaturschluessel*
+astra-schluessel*
+key-backup*

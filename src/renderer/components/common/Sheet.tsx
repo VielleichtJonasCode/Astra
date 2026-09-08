@@ -12,7 +12,14 @@ export interface SheetProps {
   footer?: ReactNode
 }
 
-export function Sheet({ title, subtitle, wide, onClose, children, footer }: SheetProps): JSX.Element {
+export function Sheet({
+  title,
+  subtitle,
+  wide,
+  onClose,
+  children,
+  footer
+}: SheetProps): JSX.Element {
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') onClose()

@@ -11,8 +11,16 @@ import { Spinner } from '../common/misc'
 import { toast } from '../common/toast'
 
 const PRESETS: { id: string; label: string; regex: RegExp }[] = [
-  { id: 'email', label: 'E-Mail-Adressen', regex: /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g },
-  { id: 'phone', label: 'Telefonnummern', regex: /(?:\+?\d{1,3}[ /-]?)?\(?\d{2,5}\)?[ /-]?\d[\d ./-]{4,}\d/g },
+  {
+    id: 'email',
+    label: 'E-Mail-Adressen',
+    regex: /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g
+  },
+  {
+    id: 'phone',
+    label: 'Telefonnummern',
+    regex: /(?:\+?\d{1,3}[ /-]?)?\(?\d{2,5}\)?[ /-]?\d[\d ./-]{4,}\d/g
+  },
   { id: 'iban', label: 'IBAN', regex: /[A-Z]{2}\d{2}[ ]?(?:[A-Z0-9]{4}[ ]?){3,7}[A-Z0-9]{1,4}/g },
   { id: 'card', label: 'Kreditkartennummern', regex: /\b(?:\d[ -]?){13,16}\b/g }
 ]
@@ -32,7 +40,10 @@ export function RedactAssistantDialog({ onClose }: { onClose: () => void }): JSX
     if (!proxy) return
     setBusy(true)
     try {
-      const all: { pageIndex: number; rect: { x: number; y: number; width: number; height: number } }[] = []
+      const all: {
+        pageIndex: number
+        rect: { x: number; y: number; width: number; height: number }
+      }[] = []
       for (const p of PRESETS) {
         if (active[p.id]) all.push(...(await searchDocumentRegex(proxy, doc.pages, p.regex)))
       }

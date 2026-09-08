@@ -1,11 +1,11 @@
 import { Sheet } from '../common/Sheet'
 import { Button } from '../common/Button'
-import { Icon } from '../common/Icon'
+import { AstraMark } from '../AstraMark'
 
 export function AboutDialog({ onClose }: { onClose: () => void }): JSX.Element {
   return (
     <Sheet
-      title="Über PDF Studio"
+      title="Über Astra"
       onClose={onClose}
       footer={
         <Button variant="primary" onClick={onClose}>
@@ -13,26 +13,32 @@ export function AboutDialog({ onClose }: { onClose: () => void }): JSX.Element {
         </Button>
       }
     >
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
-        <div
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 12,
+          textAlign: 'center'
+        }}
+      >
+        <div style={{ borderRadius: 20, overflow: 'hidden', boxShadow: 'var(--shadow-md)' }}>
+          <AstraMark size={76} />
+        </div>
+        <div style={{ fontSize: 16, fontWeight: 600 }}>Astra</div>
+        <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+          Version 0.1.0 · Apple Silicon
+        </div>
+        <p
           style={{
-            width: 72,
-            height: 72,
-            borderRadius: 18,
-            background: 'linear-gradient(160deg, var(--accent), #5e5ce6)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff'
+            fontSize: 12,
+            color: 'var(--text-tertiary)',
+            lineHeight: 1.6,
+            maxWidth: 400
           }}
         >
-          <Icon name="page" size={34} />
-        </div>
-        <div style={{ fontSize: 16, fontWeight: 600 }}>PDF Studio</div>
-        <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Version 0.1.0 · Apple Silicon</div>
-        <p style={{ fontSize: 12, color: 'var(--text-tertiary)', lineHeight: 1.6, maxWidth: 380 }}>
-          Ein voll ausgestatteter PDF-Editor auf Basis von Electron, React, pdf.js, pdf-lib und MuPDF.
-          MuPDF steht unter AGPL-3.0.
+          Werkzeugsammlung für macOS mit einem voll ausgestatteten PDF-Editor. Basiert auf Electron,
+          React, pdf.js, pdf-lib, MuPDF und Tesseract. Lizenz: AGPL-3.0-or-later (wegen MuPDF).
         </p>
       </div>
     </Sheet>

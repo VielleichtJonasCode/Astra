@@ -15,10 +15,7 @@ export function SplitDialog({ onClose }: { onClose: () => void }): JSX.Element {
   const [n, setN] = useState(2)
   const [busy, setBusy] = useState(false)
 
-  const groups = useMemo(
-    () => computeSplitGroups(doc, { mode, ranges, n }),
-    [doc, mode, ranges, n]
-  )
+  const groups = useMemo(() => computeSplitGroups(doc, { mode, ranges, n }), [doc, mode, ranges, n])
 
   const run = async (): Promise<void> => {
     const dir = await window.api.pickDirectory()
@@ -48,7 +45,11 @@ export function SplitDialog({ onClose }: { onClose: () => void }): JSX.Element {
       footer={
         <>
           <Button onClick={onClose}>Abbrechen</Button>
-          <Button variant="primary" disabled={busy || groups.length === 0} onClick={() => void run()}>
+          <Button
+            variant="primary"
+            disabled={busy || groups.length === 0}
+            onClick={() => void run()}
+          >
             {busy ? 'Erstelle …' : `${groups.length} Dateien speichern …`}
           </Button>
         </>

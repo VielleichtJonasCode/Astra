@@ -16,7 +16,12 @@ export function ColorWell({
     <Popover
       placement="bottom-end"
       trigger={
-        <button type="button" className="colorwell" style={{ background: value }} aria-label="Farbe" />
+        <button
+          type="button"
+          className="colorwell"
+          style={{ background: value }}
+          aria-label="Farbe"
+        />
       }
     >
       <div style={{ width: 176 }}>

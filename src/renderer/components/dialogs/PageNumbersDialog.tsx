@@ -82,15 +82,27 @@ export function PageNumbersDialog({ onClose }: { onClose: () => void }): JSX.Ele
           />
         </Field>
         <Field label="Eigene Vorlage" hint="Platzhalter: {n} {N} {prefix}">
-          <TextInput value={cfg.template} onChange={(e) => setCfg({ ...cfg, template: e.target.value })} />
+          <TextInput
+            value={cfg.template}
+            onChange={(e) => setCfg({ ...cfg, template: e.target.value })}
+          />
         </Field>
         {isBates && (
           <Field label="Präfix">
-            <TextInput value={cfg.prefix} onChange={(e) => setCfg({ ...cfg, prefix: e.target.value })} />
+            <TextInput
+              value={cfg.prefix}
+              onChange={(e) => setCfg({ ...cfg, prefix: e.target.value })}
+            />
           </Field>
         )}
         <Field label="Startnummer">
-          <NumberInput value={cfg.start} min={0} max={99999} onChange={(start) => setCfg({ ...cfg, start })} width={90} />
+          <NumberInput
+            value={cfg.start}
+            min={0}
+            max={99999}
+            onChange={(start) => setCfg({ ...cfg, start })}
+            width={90}
+          />
         </Field>
         <Field label="Position">
           <Select
@@ -100,13 +112,27 @@ export function PageNumbersDialog({ onClose }: { onClose: () => void }): JSX.Ele
           />
         </Field>
         <Field label="Schriftgröße">
-          <NumberInput value={cfg.fontSize} min={6} max={24} suffix=" pt" width={86} onChange={(fontSize) => setCfg({ ...cfg, fontSize })} />
+          <NumberInput
+            value={cfg.fontSize}
+            min={6}
+            max={24}
+            suffix=" pt"
+            width={86}
+            onChange={(fontSize) => setCfg({ ...cfg, fontSize })}
+          />
         </Field>
         <Field label="Farbe">
           <ColorWell value={cfg.color} onChange={(color) => setCfg({ ...cfg, color })} />
         </Field>
         <Field label="Rand">
-          <NumberInput value={cfg.margin} min={4} max={120} suffix=" pt" width={86} onChange={(margin) => setCfg({ ...cfg, margin })} />
+          <NumberInput
+            value={cfg.margin}
+            min={4}
+            max={120}
+            suffix=" pt"
+            width={86}
+            onChange={(margin) => setCfg({ ...cfg, margin })}
+          />
         </Field>
         <Field label="Seiten" hint="Leer = alle">
           <TextInput value={rangeStr} onChange={(e) => setRangeStr(e.target.value)} />

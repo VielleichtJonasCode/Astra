@@ -44,8 +44,6 @@ export async function applyRedactionsAndSecurity(
       enc && (enc.userPassword || enc.ownerPassword)
         ? { user: enc.userPassword, owner: enc.ownerPassword }
         : null,
-    compress: doc.postProcess.compress
-      ? { imageQuality: doc.postProcess.compress.quality }
-      : null
+    compress: doc.postProcess.compress ? { imageQuality: doc.postProcess.compress.quality } : null
   })
 }

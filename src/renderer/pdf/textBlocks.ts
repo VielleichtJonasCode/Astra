@@ -2,7 +2,62 @@ import type { PDFDocumentProxy } from 'pdfjs-dist'
 import type { Rect } from '../lib/geometry'
 import type { Rotation } from './model'
 import { getCachedPage } from './pageCache'
+import { getPageTextBoxes, type TextItemBox } from './pdfjs'
 import { rotateRectInPage } from './searchPdf'
+
+const itemCache = new WeakMap<PDFDocumentProxy, Map<string, TextItemBox[]>>()
+
+/** Einzelne Textstücke einer Seite (mit Rotations-Transform), gecacht. */
+export async function getTextItemBoxes(
+  proxy: PDFDocumentProxy,
+  pdfPageNumber: number,
+  rotation: Rotation
+): Promise<TextItemBox[]> {
+  let map = itemCache.get(proxy)
+  if (!map) {
+    map = new Map()
+    itemCache.set(proxy, map)
+  }
+  const key = `${pdfPageNumber}:${rotation}`
+  const hit = map.get(key)
+  if (hit) return hit
+
+  const page = await getCachedPage(proxy, pdfPageNumber)
+  const raw = await getPageTextBoxes(page)
+  // Zeilen-Textstücke in einzelne Wörter zerlegen (für wortweises Markieren)
+  const words = raw.flatMap(splitIntoWords)
+  const out =
+    rotation === 0
+      ? words
+      : words.map((b) => {
+          const vp = page.getViewport({ scale: 1 })
+          const r = rotateRectInPage(
+            { x: b.x, y: b.y, width: b.width, height: b.height },
+            rotation,
+            vp.width,
+            vp.height
+          )
+          return { ...b, x: r.x, y: r.y, width: r.width, height: r.height }
+        })
+  map.set(key, out)
+  return out
+}
+
+function splitIntoWords(box: TextItemBox): TextItemBox[] {
+  const parts = box.str.split(/(\s+)/)
+  if (parts.length <= 1) return [box]
+  const totalChars = box.str.length || 1
+  const out: TextItemBox[] = []
+  let cursor = box.x
+  for (const part of parts) {
+    const w = box.width * (part.length / totalChars)
+    if (part.trim().length > 0) {
+      out.push({ ...box, str: part, x: cursor, width: Math.max(1, w) })
+    }
+    cursor += w
+  }
+  return out.length ? out : [box]
+}
 
 export interface TextBlock {
   text: string
@@ -79,7 +134,11 @@ export async function getTextBlocks(
         ? rawRect
         : rotateRectInPage(rawRect, rotation, viewport.width, viewport.height)
     return {
-      text: line.map((i) => i.str).join('').replace(/\s+/g, ' ').trim(),
+      text: line
+        .map((i) => i.str)
+        .join('')
+        .replace(/\s+/g, ' ')
+        .trim(),
       rect,
       fontSize: Math.round(line[0].h * 10) / 10,
       fontName: line[0].fontName

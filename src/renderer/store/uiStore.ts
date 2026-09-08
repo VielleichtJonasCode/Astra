@@ -53,6 +53,10 @@ interface UiState {
   inspectorOpen: boolean
   toggleSidebar: () => void
   toggleInspector: () => void
+  sidebarWidth: number
+  inspectorWidth: number
+  setSidebarWidth: (w: number) => void
+  setInspectorWidth: (w: number) => void
 
   /** Aktuell im Viewer sichtbare Seite (1-basiert), für die Statusleiste. */
   currentPage: number
@@ -84,15 +88,38 @@ interface UiState {
 
 const ZOOM_STEPS = [0.25, 0.33, 0.5, 0.67, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 6, 8]
 
+function readNum(key: string, fallback: number): number {
+  try {
+    const v = Number(localStorage.getItem(key))
+    return Number.isFinite(v) && v > 0 ? v : fallback
+  } catch {
+    return fallback
+  }
+}
+function writeNum(key: string, value: number): void {
+  try {
+    localStorage.setItem(key, String(value))
+  } catch {
+    /* ignore */
+  }
+}
+function readZoomPref(): ZoomMode {
+  try {
+    const z = JSON.parse(localStorage.getItem('astra.settings') ?? '{}').pdfZoom
+    return z === 'fit-page' ? 'fit-page' : 'fit-width'
+  } catch {
+    return 'fit-width'
+  }
+}
+
 export const useUiStore = create<UiState>((set, get) => ({
   tool: 'select',
   previousTool: 'select',
   setTool: (tool) => set((s) => ({ tool, previousTool: s.tool })),
-  finishOneShot: () =>
-    set((s) => (ONE_SHOT_TOOLS.includes(s.tool) ? { tool: 'select' } : {})),
+  finishOneShot: () => set((s) => (ONE_SHOT_TOOLS.includes(s.tool) ? { tool: 'select' } : {})),
 
   zoom: 1,
-  zoomMode: 'fit-width',
+  zoomMode: readZoomPref(),
   setZoom: (zoom, mode) =>
     set({ zoom: Math.min(8, Math.max(0.1, zoom)), zoomMode: mode ?? 'custom' }),
   zoomIn: () => {
@@ -120,6 +147,18 @@ export const useUiStore = create<UiState>((set, get) => ({
   inspectorOpen: true,
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   toggleInspector: () => set((s) => ({ inspectorOpen: !s.inspectorOpen })),
+  sidebarWidth: readNum('astra.sidebarWidth', 232),
+  inspectorWidth: readNum('astra.inspectorWidth', 288),
+  setSidebarWidth: (w) => {
+    const v = Math.round(Math.min(420, Math.max(170, w)))
+    writeNum('astra.sidebarWidth', v)
+    set({ sidebarWidth: v })
+  },
+  setInspectorWidth: (w) => {
+    const v = Math.round(Math.min(460, Math.max(220, w)))
+    writeNum('astra.inspectorWidth', v)
+    set({ inspectorWidth: v })
+  },
 
   currentPage: 1,
   setCurrentPage: (currentPage) => set({ currentPage }),

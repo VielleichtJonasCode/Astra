@@ -85,7 +85,12 @@ export function FindBar({
           ''
         )}
       </span>
-      <IconButton name="chevron-up" label="Vorheriger Treffer" onClick={prev} disabled={!matches.length} />
+      <IconButton
+        name="chevron-up"
+        label="Vorheriger Treffer"
+        onClick={prev}
+        disabled={!matches.length}
+      />
       <IconButton
         name="chevron-down"
         label="Nächster Treffer"

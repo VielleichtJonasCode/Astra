@@ -1,0 +1,24 @@
+{
+  "name": "Astra unterwegs",
+  "short_name": "Astra",
+  "description": "Notizen scannen und als PDF in iCloud ablegen, PDFs mit deinem Astra-Schlüssel signieren und prüfen – komplett offline.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0b12",
+  "theme_color": "#0b0b12",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='42' fill='%230b0b12'/%3E%3Ccircle cx='96' cy='96' r='44' fill='none' stroke='%235b8cff' stroke-width='10'/%3E%3Cellipse cx='96' cy='96' rx='74' ry='26' fill='none' stroke='%23e2b64a' stroke-width='10' transform='rotate(-20 96 96)'/%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%230b0b12'/%3E%3Ccircle cx='256' cy='256' r='118' fill='none' stroke='%235b8cff' stroke-width='26'/%3E%3Cellipse cx='256' cy='256' rx='198' ry='70' fill='none' stroke='%23e2b64a' stroke-width='26' transform='rotate(-20 256 256)'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

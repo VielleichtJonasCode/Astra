@@ -70,6 +70,24 @@ export type IconName =
   | 'file-plus'
   | 'more'
   | 'presentation'
+  | 'planet'
+  | 'signature-pen'
+  | 'apps'
+  | 'home'
+  | 'text-select'
+  | 'save'
+  | 'export'
+  | 'flip-h'
+  | 'flip-v'
+  | 'play'
+  | 'pause'
+  | 'scan'
+  | 'graduation'
+  | 'folder'
+  | 'folder-open'
+  | 'inbox'
+  | 'camera'
+  | 'calendar'
 
 const P = (d: string): ReactNode => <path d={d} />
 
@@ -440,6 +458,113 @@ const ICONS: Record<IconName, ReactNode> = {
       <path d="M2 3h20" />
       <path d="M3 3v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V3" />
       <path d="m8 21 4-4 4 4" />
+    </>
+  ),
+  planet: (
+    <>
+      <circle cx="12" cy="12" r="6.5" />
+      <ellipse cx="12" cy="12" rx="11" ry="4" transform="rotate(-22 12 12)" />
+    </>
+  ),
+  'signature-pen': (
+    <>
+      <path d="M3 17c2 0 3-1.4 3-4s-.9-4-2-4-2 1.6-2 4 1 6 3.5 6 3.5-3 3.5-6 .8-4 2-4 2 1.5 2 3.5" />
+      <path d="M15 12c1 0 2 .8 2 2.2 0 1.4-1.2 2.3-1.2 3.3 0 .7.6 1.2 1.4 1.2 1.6 0 2.8-1.6 3.8-3.9" />
+      <path d="M3 21h18" />
+    </>
+  ),
+  apps: (
+    <>
+      <rect x="3" y="3" width="7" height="7" rx="1.6" />
+      <rect x="14" y="3" width="7" height="7" rx="1.6" />
+      <rect x="14" y="14" width="7" height="7" rx="1.6" />
+      <rect x="3" y="14" width="7" height="7" rx="1.6" />
+    </>
+  ),
+  home: (
+    <>
+      <path d="M3 10.5 12 3l9 7.5" />
+      <path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5" />
+      <path d="M10 21v-6h4v6" />
+    </>
+  ),
+  'text-select': (
+    <>
+      <path d="M5 3H4a1 1 0 0 0-1 1v1M9 3h2M15 3h2M20 3h1a1 1 0 0 1 1 1v1M3 9v2M3 15v2M22 9v2M22 15v2M3 20v-1a1 1 0 0 1 1-1h1M9 21h2M15 21h2M20 21h1a1 1 0 0 0 1-1v-1" />
+      <path d="M8 7h8M8 11h8M8 15h5" />
+    </>
+  ),
+  save: (
+    <>
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
+      <path d="M17 21v-8H7v8" />
+      <path d="M7 3v5h8" />
+    </>
+  ),
+  export: (
+    <>
+      <path d="M12 3v13" />
+      <path d="m7 8 5-5 5 5" />
+      <path d="M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" />
+    </>
+  ),
+  'flip-h': (
+    <>
+      <path d="M12 3v18" />
+      <path d="M8 8 4 12l4 4Z" />
+      <path d="m16 8 4 4-4 4Z" />
+    </>
+  ),
+  'flip-v': (
+    <>
+      <path d="M3 12h18" />
+      <path d="M8 8 12 4l4 4Z" />
+      <path d="m8 16 4 4 4-4Z" />
+    </>
+  ),
+  play: <path d="M6 4v16l14-8Z" fill="currentColor" stroke="none" />,
+  pause: (
+    <>
+      <rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none" />
+      <rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none" />
+    </>
+  ),
+  scan: (
+    <>
+      <path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2" />
+      <path d="M4 12h16" />
+    </>
+  ),
+  graduation: (
+    <>
+      <path d="M22 10 12 5 2 10l10 5 10-5Z" />
+      <path d="M6 12v5c0 1 2.7 2.5 6 2.5s6-1.5 6-2.5v-5" />
+      <path d="M22 10v6" />
+    </>
+  ),
+  folder: <path d="M4 20a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2Z" />,
+  'folder-open': (
+    <>
+      <path d="M4 20a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2" />
+      <path d="m2.5 19 2.3-7a1 1 0 0 1 1-.7h15.4a1 1 0 0 1 1 1.3L20.5 19a1 1 0 0 1-1 .7H3.5a1 1 0 0 1-1-1.4Z" />
+    </>
+  ),
+  inbox: (
+    <>
+      <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+      <path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1Z" />
+    </>
+  ),
+  camera: (
+    <>
+      <path d="M14.5 4h-5L8 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-4Z" />
+      <circle cx="12" cy="13" r="3.5" />
+    </>
+  ),
+  calendar: (
+    <>
+      <rect x="3" y="4.5" width="18" height="17" rx="2" />
+      <path d="M3 9.5h18M8 2.5v4M16 2.5v4" />
     </>
   )
 }

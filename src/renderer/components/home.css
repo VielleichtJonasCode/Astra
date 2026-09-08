@@ -1,0 +1,538 @@
+.home {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: var(--bg-window);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+/* ---------- Deko-Hintergrund ---------- */
+.home__deco {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.home__glow {
+  position: absolute;
+  top: -260px;
+  left: 50%;
+  width: 900px;
+  height: 640px;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--accent) 22%, transparent),
+    transparent 62%
+  );
+  filter: blur(20px);
+}
+.home__ring {
+  position: absolute;
+  top: -120px;
+  right: -160px;
+  width: 620px;
+  height: 620px;
+  color: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .home__ring {
+    color: rgba(255, 214, 120, 0.12);
+  }
+}
+
+/* ---------- Scroll / Layout ---------- */
+.home__bar {
+  height: var(--titlebar-h);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 12px;
+}
+.home__settings {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 28px;
+  border-radius: var(--r-sm);
+  color: var(--text-secondary);
+}
+.home__settings:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* ---------- „Zuletzt"-Zeile ---------- */
+.home__recentrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px 0 6px;
+  border-radius: 999px;
+  background: var(--bg-content);
+  box-shadow: inset 0 0 0 1px var(--border);
+  font-size: var(--fs-12);
+  color: var(--text-secondary);
+  max-width: 220px;
+  transition:
+    box-shadow var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+.rchip:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 0 0 1px var(--border),
+    var(--shadow-sm);
+  color: var(--text-primary);
+}
+.rchip__icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--tint, #8e8e93) 88%, white),
+    var(--tint, #8e8e93)
+  );
+}
+.rchip__icon--file {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.rchip__label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rchip--app {
+  font-weight: var(--fw-medium);
+  color: var(--text-primary);
+}
+.home__scroll {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 48px 48px;
+}
+.home__inner {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* ---------- Hero ---------- */
+.home__hero {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 0 26px;
+}
+.home__markwrap {
+  border-radius: 18px;
+  box-shadow:
+    0 10px 30px rgba(10, 60, 160, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+  line-height: 0;
+}
+.home__greeting {
+  font-size: var(--fs-13);
+  color: var(--text-tertiary);
+  font-weight: var(--fw-medium);
+}
+.home__name {
+  font-size: 34px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.02em;
+  margin: 2px 0 3px;
+  line-height: 1;
+}
+.home__tag {
+  font-size: var(--fs-13);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ---------- Suche ---------- */
+.home__search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 42px;
+  padding: 0 12px 0 14px;
+  margin-bottom: 30px;
+  border-radius: var(--r-lg);
+  background: var(--bg-elevated);
+  box-shadow:
+    inset 0 0 0 1px var(--border),
+    var(--shadow-sm);
+  color: var(--text-tertiary);
+  transition: box-shadow var(--dur-fast) var(--ease);
+}
+.home__search:focus-within {
+  box-shadow:
+    inset 0 0 0 1.5px var(--accent),
+    0 0 0 4px var(--accent-soft);
+}
+.home__search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: var(--fs-14);
+  color: var(--text-primary);
+}
+.home__search input::placeholder {
+  color: var(--text-tertiary);
+}
+.home__search kbd {
+  font-size: var(--fs-11);
+  color: var(--text-tertiary);
+  background: var(--bg-hover);
+  border-radius: var(--r-xs);
+  padding: 2px 6px;
+}
+.home__searchclear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: var(--text-tertiary);
+  background: var(--bg-hover);
+}
+.home__searchclear:hover {
+  color: var(--text-primary);
+}
+
+/* — Studienplaner-Hero — */
+.home__sp {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  width: 100%;
+  text-align: left;
+  margin-bottom: 34px;
+  padding: 20px 22px;
+  border-radius: var(--r-xl, 18px);
+  border: 1px solid color-mix(in srgb, #0a84ff 40%, var(--border-inset));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, #0a84ff 20%, var(--bg-elevated)),
+    color-mix(in srgb, #5e5ce6 13%, var(--bg-elevated))
+  );
+  color: var(--text-primary);
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+.home__sp:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+.home__sp-icon {
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: linear-gradient(135deg, #0a84ff, #5e5ce6);
+  box-shadow: 0 6px 18px color-mix(in srgb, #0a84ff 45%, transparent);
+}
+.home__sp-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.home__sp-title {
+  font-size: var(--fs-18, 1.15rem);
+  font-weight: var(--fw-semibold);
+}
+.home__sp-desc {
+  font-size: var(--fs-13);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.home__sp-go {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+
+/* ---------- Sektionen ---------- */
+.home__section {
+  margin-bottom: 32px;
+}
+.home__h2 {
+  font-size: var(--fs-11);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  margin: 0 0 12px;
+}
+.home__none {
+  font-size: var(--fs-13);
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+/* ---------- App-Karten ---------- */
+.home__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+  gap: 14px;
+}
+.appcard {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px;
+  border-radius: var(--r-lg);
+  background: var(--bg-content);
+  box-shadow:
+    inset 0 0 0 1px var(--border),
+    var(--shadow-sm);
+  text-align: left;
+  overflow: hidden;
+  transition:
+    transform var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+.appcard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    120% 90% at 0% 0%,
+    color-mix(in srgb, var(--tint) 12%, transparent),
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+.appcard:not(.is-soon):hover {
+  transform: translateY(-3px);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--tint) 55%, var(--border)),
+    0 12px 28px rgba(0, 0, 0, 0.16);
+}
+.appcard:not(.is-soon):hover::before {
+  opacity: 1;
+}
+.appcard:not(.is-soon):active {
+  transform: translateY(-1px);
+}
+.appcard.is-soon {
+  opacity: 0.62;
+  cursor: default;
+}
+.appcard__icon {
+  position: relative;
+  z-index: 1;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--tint) 92%, white), var(--tint));
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--tint) 40%, transparent);
+}
+.appcard.is-soon .appcard__icon {
+  box-shadow: none;
+}
+.appcard__text {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.appcard__name {
+  font-size: var(--fs-14);
+  font-weight: var(--fw-semibold);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.appcard__pill {
+  font-size: 9.5px;
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--bg-active);
+  color: var(--text-tertiary);
+}
+.appcard__desc {
+  font-size: var(--fs-12);
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+.appcard__key {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: var(--fw-semibold);
+  color: var(--text-tertiary);
+  background: var(--bg-hover);
+  z-index: 1;
+}
+.appcard__go {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  color: var(--tint);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: all var(--dur) var(--ease);
+  z-index: 1;
+}
+.appcard:hover .appcard__go {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ---------- Datei-Karten (Zuletzt) ---------- */
+.home__recents {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(184px, 1fr));
+  gap: 12px;
+}
+.filecard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  border-radius: var(--r-md);
+  background: var(--bg-content);
+  box-shadow: inset 0 0 0 1px var(--border);
+  text-align: left;
+  transition:
+    transform var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+.filecard:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 0 0 1px var(--accent),
+    var(--shadow-md);
+}
+.filecard__thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  background: var(--accent-soft);
+  margin-bottom: 6px;
+}
+.filecard__name {
+  font-size: var(--fs-12);
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.filecard__dir {
+  font-size: var(--fs-11);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Loslegen ---------- */
+.home__open {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-radius: var(--r-lg);
+  background: var(--bg-content);
+  box-shadow:
+    inset 0 0 0 1px var(--border),
+    var(--shadow-sm);
+  color: var(--accent);
+}
+.home__open:hover {
+  box-shadow:
+    inset 0 0 0 1px var(--accent),
+    var(--shadow-md);
+}
+.home__open span {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+.home__open strong {
+  font-size: var(--fs-13);
+  color: var(--text-primary);
+}
+.home__open em {
+  font-size: var(--fs-11);
+  font-style: normal;
+  color: var(--text-tertiary);
+}
+
+/* ---------- Footer ---------- */
+.home__foot {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 20px;
+  font-size: var(--fs-11);
+  color: var(--text-tertiary);
+  border-top: 1px solid var(--border-inset);
+  background: var(--bg-window);
+}
+.home__foot-hint {
+  margin-left: auto;
+}
+.home__foot kbd {
+  font-size: var(--fs-11);
+  background: var(--bg-hover);
+  border-radius: var(--r-xs);
+  padding: 1px 4px;
+}

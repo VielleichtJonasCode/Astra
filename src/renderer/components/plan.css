@@ -1,0 +1,222 @@
+/* Tagesplan-Checkliste (PlanChecklist) + Inline-Lernplan im Kurs (CoursePlanInline) */
+
+.plchk {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.plchk__top {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
+}
+.plchk__count {
+  font-size: var(--fs-12);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.plchk__bar {
+  height: 7px;
+  border-radius: 999px;
+  background: var(--bg-hover);
+  overflow: hidden;
+}
+.plchk__bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--success, var(--accent));
+  transition: width 0.2s ease;
+}
+
+.plchk__day {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.plchk__daylabel {
+  font-size: var(--fs-11);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+  margin-bottom: 2px;
+}
+.plchk__daylabel.is-past {
+  color: var(--warning);
+}
+
+.plchk__task {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-inset);
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+.plchk__task:hover {
+  background: var(--bg-hover);
+}
+.plchk__task > input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+.plchk__box {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  color: transparent;
+  flex: none;
+  margin-top: 1px;
+}
+.plchk__task.is-done .plchk__box {
+  background: var(--success, var(--accent));
+  border-color: var(--success, var(--accent));
+  color: #fff;
+}
+.plchk__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.plchk__title {
+  font-size: var(--fs-13);
+  color: var(--text-primary);
+}
+.plchk__task.is-done .plchk__title {
+  text-decoration: line-through;
+  color: var(--text-tertiary);
+}
+.plchk__meta {
+  font-size: var(--fs-11);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+.plchk__task.is-overdue .plchk__meta {
+  color: var(--warning);
+}
+.plchk__kind {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: var(--fw-semibold);
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  vertical-align: 1px;
+}
+.plchk__kind--quiz {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent);
+}
+.plchk__kind--wiederholen {
+  background: color-mix(in srgb, var(--warning) 22%, transparent);
+  color: var(--warning);
+}
+
+/* ── Inline-Lernplan im Kurs ─────────────────────────────────────────── */
+
+.cpi {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border: 1px solid var(--border-inset);
+  border-radius: var(--r-lg);
+  padding: 14px;
+  margin-bottom: 18px;
+}
+.cpi--loading {
+  align-items: center;
+  padding: 24px;
+}
+.cpi__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cpi__stats {
+  display: flex;
+  align-items: center;
+  gap: 6px 12px;
+  flex-wrap: wrap;
+  font-size: var(--fs-12);
+  color: var(--text-secondary);
+}
+.cpi__badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  font-weight: var(--fw-medium);
+}
+.cpi__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0 2px;
+  font-size: var(--fs-13);
+  color: var(--text-secondary);
+}
+.cpi__empty p {
+  margin: 0;
+}
+.cpi__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border-top: 1px solid var(--border-inset);
+  padding-top: 12px;
+}
+.cpi__tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+}
+.cpi__tabs button:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* ── Kurs-Kopf (Name + „Lernplan bearbeiten“) ────────────────────────── */
+
+.sp__coursehead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.sp__coursehead h2 {
+  margin: 0 0 2px;
+  font-size: var(--fs-16);
+  font-weight: var(--fw-semibold);
+  color: var(--text-primary);
+}
+.sp__coursehead span {
+  font-size: var(--fs-12);
+  color: var(--text-tertiary);
+}

@@ -7,7 +7,6 @@ import { Sidebar } from './Sidebar/Sidebar'
 import { Viewer } from './Viewer/Viewer'
 import { Inspector } from './Inspector/Inspector'
 import { StatusBar } from './StatusBar'
-import { ToastStack } from './common/toast'
 
 export function AppShell(): JSX.Element {
   const sidebarOpen = useUiStore((s) => s.sidebarOpen)
@@ -25,7 +24,6 @@ export function AppShell(): JSX.Element {
         {inspectorOpen && <Inspector />}
       </div>
       <StatusBar />
-      <ToastStack />
     </div>
   )
 }

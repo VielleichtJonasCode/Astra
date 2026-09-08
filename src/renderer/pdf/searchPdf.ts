@@ -34,7 +34,12 @@ export function rotateRectInPage(
 async function pageTextIndex(
   proxy: PDFDocumentProxy,
   pdfPageNumber: number
-): Promise<{ full: string; spans: { start: number; end: number; box: Rect }[]; vw: number; vh: number }> {
+): Promise<{
+  full: string
+  spans: { start: number; end: number; box: Rect }[]
+  vw: number
+  vh: number
+}> {
   const pdfPage = await getCachedPage(proxy, pdfPageNumber)
   const viewport = pdfPage.getViewport({ scale: 1 })
   const content = await pdfPage.getTextContent()

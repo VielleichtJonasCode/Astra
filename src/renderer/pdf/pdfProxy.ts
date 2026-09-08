@@ -48,9 +48,7 @@ export interface PdfProxyState {
 
 /** Reaktiver Zugriff auf den pdf.js-Proxy des Dokuments. */
 export function usePdfProxy(docKey: string | null): PdfProxyState {
-  const originalBytes = useDocStore((s) =>
-    docKey ? s.docs[docKey]?.originalBytes : undefined
-  )
+  const originalBytes = useDocStore((s) => (docKey ? s.docs[docKey]?.originalBytes : undefined))
   const [state, setState] = useState<PdfProxyState>({ proxy: null, loading: true, error: null })
 
   useEffect(() => {

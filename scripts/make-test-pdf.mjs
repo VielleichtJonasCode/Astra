@@ -85,8 +85,8 @@ function makeGraphic(W, H) {
 
 /* ---------- PDF bauen ---------- */
 const doc = await PDFDocument.create()
-doc.setTitle('PDF Studio – Testdokument mit Bild')
-doc.setAuthor('PDF Studio')
+doc.setTitle('Astra – Testdokument mit Bild')
+doc.setAuthor('Astra')
 doc.setSubject('Beispiel zum Ausprobieren von Bild-, Text- und Seitenwerkzeugen')
 doc.setKeywords(['test', 'bild', 'beispiel'])
 
@@ -108,7 +108,7 @@ const grey = rgb(0.4, 0.4, 0.42)
 // Seite 1 – Text + synthetische Grafik
 {
   const p = doc.addPage(A4)
-  p.drawText('PDF Studio', { x: 60, y: 770, size: 30, font: bold, color: ink })
+  p.drawText('Astra', { x: 60, y: 770, size: 30, font: bold, color: ink })
   p.drawText('Testdokument mit eingebettetem Bild', { x: 60, y: 742, size: 13, font, color: grey })
   const lines = [
     'Dieses PDF dient zum Ausprobieren der Bild-, Text- und Seitenwerkzeuge.',

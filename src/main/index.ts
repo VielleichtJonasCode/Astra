@@ -1,12 +1,20 @@
-import { app, BrowserWindow, nativeTheme, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeTheme, shell } from 'electron'
 import { writeFile } from 'fs/promises'
 import { join } from 'path'
 import { buildAppMenu } from './menu'
 import { registerIpc } from './ipc'
 import { registerOcr, registerOcrProtocolScheme } from './ocr'
+import { registerHtmlToPdf } from './htmlToPdf'
+import { registerAssets, registerAssetScheme } from './assets'
+import { registerStudienplaner } from './studienplaner'
+import { registerOcrHelper } from './ocr-helper'
+import { registerCalendar } from './calendar'
+import { registerLlm } from './llm'
+import { registerTray } from './tray'
 import { restoreWindowState, trackWindowState } from './windowState'
 
 registerOcrProtocolScheme()
+registerAssetScheme()
 
 /** Nur für die visuelle Verifikation: PDFSTUDIO_SHOT=<pfad> npm run dev */
 function maybeCaptureAndQuit(): void {
@@ -48,7 +56,7 @@ function createWindow(): void {
     minWidth: 940,
     minHeight: 620,
     show: false,
-    title: 'PDF Studio',
+    title: 'Astra',
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 16, y: 18 },
     vibrancy: 'sidebar',
@@ -81,10 +89,92 @@ function createWindow(): void {
     mainWindow = null
   })
 
+  // nur für Screenshots / Selbsttests
+  const devParams = new URLSearchParams()
+  if (process.env['PDFSTUDIO_VIEW']) devParams.set('view', process.env['PDFSTUDIO_VIEW'])
+  if (process.env['PDFSTUDIO_CONVERT_TEST']) {
+    devParams.set('view', 'convert')
+    devParams.set('convtest', process.env['PDFSTUDIO_CONVERT_TEST'])
+  }
+  if (process.env['PDFSTUDIO_CONVERT_DEMO']) {
+    devParams.set('view', 'convert')
+    devParams.set('convdemo', '1')
+  }
+  if (process.env['PDFSTUDIO_QR_MODE']) {
+    devParams.set('view', 'qr')
+    devParams.set('qrmode', process.env['PDFSTUDIO_QR_MODE'])
+  }
+  if (process.env['PDFSTUDIO_QR_TEST']) {
+    devParams.set('view', 'qr')
+    devParams.set('qrtest', '1')
+  }
+  if (process.env['PDFSTUDIO_DIALOG']) devParams.set('dialog', process.env['PDFSTUDIO_DIALOG'])
+  if (process.env['PDFSTUDIO_IMAGE']) {
+    devParams.set('view', 'image')
+    devParams.set('img', process.env['PDFSTUDIO_IMAGE'])
+  }
+  if (process.env['PDFSTUDIO_IMAGE_TEST']) devParams.set('imgtest', '1')
+  if (process.env['PDFSTUDIO_IMAGE_DEMO']) devParams.set('imgdemo', '1')
+  if (process.env['PDFSTUDIO_TEXT']) devParams.set('view', 'text')
+  if (process.env['PDFSTUDIO_TEXT_TEST']) {
+    devParams.set('view', 'text')
+    devParams.set('texttest', '1')
+  }
+  if (process.env['PDFSTUDIO_UNITS']) devParams.set('view', 'units')
+  if (process.env['PDFSTUDIO_TABLE']) devParams.set('view', 'table')
+  if (process.env['PDFSTUDIO_TABLE_TEST']) {
+    devParams.set('view', 'table')
+    devParams.set('tabletest', '1')
+  }
+  if (process.env['PDFSTUDIO_AUDIO']) {
+    devParams.set('view', 'audio')
+    devParams.set('aud', process.env['PDFSTUDIO_AUDIO'])
+  }
+  if (process.env['PDFSTUDIO_AUDIO_TEST']) {
+    devParams.set('view', 'audio')
+    devParams.set('audiotest', '1')
+  }
+  if (process.env['PDFSTUDIO_MERGE_TEST']) devParams.set('mergetest', '1')
+  if (process.env['PDFSTUDIO_AUD_DBG']) devParams.set('auddbg', '1')
+  if (process.env['PDFSTUDIO_SCAN']) {
+    devParams.set('view', 'scan')
+    devParams.set('scan', process.env['PDFSTUDIO_SCAN'])
+  }
+  if (process.env['PDFSTUDIO_SCAN_TEST']) {
+    devParams.set('view', 'scan')
+    devParams.set('scan', process.env['PDFSTUDIO_SCAN'] ?? '')
+    devParams.set('scantest', '1')
+  }
+  if (process.env['PDFSTUDIO_SIGN']) devParams.set('view', 'sign')
+  if (process.env['PDFSTUDIO_SIGN_TEST']) {
+    devParams.set('view', 'sign')
+    devParams.set('signtest', '1')
+  }
+  if (process.env['PDFSTUDIO_UNITS_TEST']) {
+    devParams.set('view', 'units')
+    devParams.set('unittest', '1')
+  }
+  if (process.env['PDFSTUDIO_STUDIENPLANER']) devParams.set('view', 'studienplaner')
+  if (process.env['PDFSTUDIO_SP_DIR']) {
+    devParams.set('view', 'studienplaner')
+    devParams.set('spdir', process.env['PDFSTUDIO_SP_DIR'])
+  }
+  if (process.env['PDFSTUDIO_SP_COURSE'])
+    devParams.set('spcourse', process.env['PDFSTUDIO_SP_COURSE'])
+  if (process.env['PDFSTUDIO_SP_DEMO']) {
+    devParams.set('view', 'studienplaner')
+    devParams.set('spdemo', '1')
+  }
+  if (process.env['PDFSTUDIO_SP_SHEET']) devParams.set('spsheet', process.env['PDFSTUDIO_SP_SHEET'])
+  if (process.env['PDFSTUDIO_SP_TEST']) {
+    devParams.set('view', 'studienplaner')
+    devParams.set('sptest', '1')
+  }
+  const hash = devParams.toString() ? `#${devParams.toString()}` : ''
   if (isDev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'] + hash)
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    mainWindow.loadFile(join(__dirname, '../renderer/index.html'), { hash: hash.slice(1) })
   }
 }
 
@@ -115,13 +205,25 @@ if (!app.requestSingleInstanceLock()) {
     }
   })
 
+  // Renderer holt sich beim Start ausstehende "Öffnen mit"-Dateien ab (Race-sicher).
+  ipcMain.handle('app:consumePendingFiles', () => pendingOpenFiles.splice(0))
+
   app.whenReady().then(() => {
     nativeTheme.themeSource = 'system'
-    app.setName('PDF Studio')
+    app.setName('Astra')
     registerIpc(getMainWindow)
     registerOcr()
+    registerOcrHelper()
+    registerCalendar()
+    registerLlm()
+    registerAssets()
+    registerHtmlToPdf()
+    registerStudienplaner(getMainWindow)
     buildAppMenu(getMainWindow)
     createWindow()
+    registerTray(getMainWindow, () => {
+      if (!mainWindow) createWindow()
+    })
 
     // Beim Start übergebene Dateien (nicht-macOS bzw. CLI, plus Dev-Env).
     const argFiles = process.argv.slice(1).filter((a) => a.toLowerCase().endsWith('.pdf'))

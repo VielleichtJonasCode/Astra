@@ -555,7 +555,13 @@ textarea.input {
   font-size: var(--fs-11);
   white-space: nowrap;
   pointer-events: none;
-  animation: fade-in var(--dur-fast) var(--ease) 220ms both;
+  box-shadow: var(--shadow-md);
+  animation: fade-in var(--dur-fast) var(--ease) both;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .tooltip {
+    background: rgba(64, 64, 66, 0.96);
+  }
 }
 
 /* ---------- Spinner ---------- */
@@ -566,6 +572,56 @@ textarea.input {
   width: 18px;
   height: 18px;
   animation: spin 0.7s linear infinite;
+}
+
+/* ---------- Signature dialog ---------- */
+.sig-pad {
+  width: 100%;
+  height: 170px;
+  border-radius: var(--r-md);
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--border);
+  touch-action: none;
+  cursor: crosshair;
+}
+.sig-preview {
+  margin-top: 10px;
+  border-radius: var(--r-md);
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--border);
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.sig-preview img {
+  max-width: 100%;
+  max-height: 160px;
+}
+.sig-chip {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.sig-chip__use {
+  width: 120px;
+  height: 44px;
+  border-radius: var(--r-sm);
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 4px;
+}
+.sig-chip__use:hover {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.sig-chip__use img {
+  max-width: 100%;
+  max-height: 100%;
 }
 
 /* ---------- Divider ---------- */
@@ -579,4 +635,71 @@ textarea.input {
   width: auto;
   height: 1px;
   margin: 4px 0;
+}
+
+/* — Error-Boundary-Fallback — */
+.errbound {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: var(--bg-content);
+  z-index: 50;
+}
+.errbound__box {
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid var(--border-inset);
+  border-radius: var(--r-lg);
+  background: var(--bg-elevated);
+}
+.errbound__box strong {
+  font-size: var(--fs-14, 14px);
+  color: var(--text-primary);
+}
+.errbound__box p {
+  margin: 0;
+  font-size: var(--fs-12);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.errbound__box pre {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  background: var(--bg-hover);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 160px;
+  overflow: auto;
+}
+.errbound__row {
+  display: flex;
+  gap: 8px;
+}
+.errbound__box button {
+  padding: 7px 14px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+}
+.errbound__box button:first-child {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.errbound__box button:hover {
+  filter: brightness(1.08);
 }

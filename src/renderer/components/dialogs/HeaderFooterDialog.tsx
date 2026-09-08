@@ -25,11 +25,8 @@ export function HeaderFooterDialog({ onClose }: { onClose: () => void }): JSX.El
   const [cfg, setCfg] = useState<HeaderFooterConfig>(doc.overlays.headerFooter ?? DEFAULT)
   const [rangeStr, setRangeStr] = useState(cfg.pages.map((p) => p + 1).join(', '))
 
-  const band = (
-    which: 'header' | 'footer',
-    pos: 'left' | 'center' | 'right',
-    v: string
-  ): void => setCfg({ ...cfg, [which]: { ...cfg[which], [pos]: v } })
+  const band = (which: 'header' | 'footer', pos: 'left' | 'center' | 'right', v: string): void =>
+    setCfg({ ...cfg, [which]: { ...cfg[which], [pos]: v } })
 
   const apply = (remove = false): void => {
     mutate(doc.key, remove ? 'Kopf-/Fußzeile entfernen' : 'Kopf-/Fußzeile', (d) => {
@@ -79,13 +76,27 @@ export function HeaderFooterDialog({ onClose }: { onClose: () => void }): JSX.El
       <Divider horizontal />
       <FieldGroup>
         <Field label="Schriftgröße">
-          <NumberInput value={cfg.fontSize} min={6} max={18} suffix=" pt" width={84} onChange={(fontSize) => setCfg({ ...cfg, fontSize })} />
+          <NumberInput
+            value={cfg.fontSize}
+            min={6}
+            max={18}
+            suffix=" pt"
+            width={84}
+            onChange={(fontSize) => setCfg({ ...cfg, fontSize })}
+          />
         </Field>
         <Field label="Farbe">
           <ColorWell value={cfg.color} onChange={(color) => setCfg({ ...cfg, color })} />
         </Field>
         <Field label="Rand">
-          <NumberInput value={cfg.margin} min={8} max={96} suffix=" pt" width={84} onChange={(margin) => setCfg({ ...cfg, margin })} />
+          <NumberInput
+            value={cfg.margin}
+            min={8}
+            max={96}
+            suffix=" pt"
+            width={84}
+            onChange={(margin) => setCfg({ ...cfg, margin })}
+          />
         </Field>
         <Field label="Seiten" hint="Leer = alle">
           <TextInput value={rangeStr} onChange={(e) => setRangeStr(e.target.value)} />

@@ -1,7 +1,11 @@
+import type { PdfDoc } from '../pdf/model'
 import { useDocStore } from '../store/docStore'
 import { requestDialog } from '../store/dialogStore'
-import { buildOutputPdf } from '../pdf/exportPdf'
+import { buildOutputPdf, willMacSign } from '../pdf/exportPdf'
 import { toast } from '../components/common/toast'
+
+const savedMessage = (doc: PdfDoc): string =>
+  willMacSign(doc) ? 'Gesichert und mit deinem Mac-Schlüssel signiert.' : 'Gesichert.'
 
 function defaultName(name: string, suffix = ''): string {
   const base = name.replace(/\.pdf$/i, '')
@@ -21,7 +25,7 @@ export async function saveActive(): Promise<void> {
     await window.api.writeFile(doc.path, bytes)
     store.markSaved(doc.key, doc.path, bytes)
     toast.dismiss(id)
-    toast.success('Gesichert.')
+    toast.success(savedMessage(doc))
   } catch (err) {
     toast.dismiss(id)
     toast.error('Sichern fehlgeschlagen.')
@@ -44,7 +48,7 @@ export async function saveActiveAs(): Promise<void> {
     await window.api.writeFile(target, bytes)
     store.markSaved(doc.key, target, bytes)
     toast.dismiss(id)
-    toast.success('Gesichert.')
+    toast.success(savedMessage(doc))
   } catch (err) {
     toast.dismiss(id)
     toast.error('Sichern fehlgeschlagen.')

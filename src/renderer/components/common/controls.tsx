@@ -2,6 +2,7 @@ import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react
 import { cx } from '../../lib/cx'
 import { clamp } from '../../lib/geometry'
 import { Icon, type IconName } from './Icon'
+import { Tooltip } from './Tooltip'
 
 /* ---------- Segmented ---------- */
 
@@ -23,20 +24,30 @@ export function Segmented<T extends string>({
 }): JSX.Element {
   return (
     <div className="segmented" role="radiogroup">
-      {options.map((opt) => (
-        <button
-          key={opt.value}
-          type="button"
-          role="radio"
-          aria-checked={opt.value === value}
-          title={opt.title ?? opt.label}
-          className={cx('segmented__item', opt.value === value && 'is-active')}
-          onClick={() => onChange(opt.value)}
-        >
-          {opt.icon && <Icon name={opt.icon} size={14} />}
-          {opt.label}
-        </button>
-      ))}
+      {options.map((opt) => {
+        const btn = (
+          <button
+            key={opt.value}
+            type="button"
+            role="radio"
+            aria-checked={opt.value === value}
+            aria-label={opt.title ?? opt.label}
+            className={cx('segmented__item', opt.value === value && 'is-active')}
+            onClick={() => onChange(opt.value)}
+          >
+            {opt.icon && <Icon name={opt.icon} size={14} />}
+            {opt.label}
+          </button>
+        )
+        const tip = opt.title && !opt.label ? opt.title : ''
+        return tip ? (
+          <Tooltip key={opt.value} label={tip}>
+            {btn}
+          </Tooltip>
+        ) : (
+          btn
+        )
+      })}
     </div>
   )
 }
@@ -75,9 +86,7 @@ export function TextInput(props: InputHTMLAttributes<HTMLInputElement>): JSX.Ele
   return <input {...props} className={cx('input', props.className)} />
 }
 
-export function TextArea(
-  props: React.TextareaHTMLAttributes<HTMLTextAreaElement>
-): JSX.Element {
+export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>): JSX.Element {
   return <textarea {...props} className={cx('input', props.className)} />
 }
 

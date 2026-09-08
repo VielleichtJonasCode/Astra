@@ -1,13 +1,6 @@
 import { create } from 'zustand'
-import {
-  applyPatches,
-  enablePatches,
-  produceWithPatches,
-  setAutoFreeze,
-  type Patch
-} from 'immer'
+import { applyPatches, enablePatches, produceWithPatches, setAutoFreeze, type Patch } from 'immer'
 import { nanoid } from 'nanoid'
-import { PDFDocument } from 'pdf-lib'
 import type { LoadedFile } from '@shared/types'
 import {
   DEFAULT_METADATA,
@@ -20,6 +13,7 @@ import {
   type Rotation
 } from '../pdf/model'
 import { toast } from '../components/common/toast'
+import { enterPdfEditor } from './shellStore'
 
 enablePatches()
 // Große Uint8Arrays nicht einfrieren – pdf.js / pdf-lib brauchen Schreibzugriff auf Kopien.
@@ -98,12 +92,13 @@ function emptyHistory(): DocHistory {
 }
 
 function normalizeRotation(angle: number): Rotation {
-  const a = ((Math.round(angle / 90) * 90) % 360 + 360) % 360
+  const a = (((Math.round(angle / 90) * 90) % 360) + 360) % 360
   return a as Rotation
 }
 
 async function buildDoc(file: LoadedFile): Promise<PdfDoc> {
   const bytes = file.bytes instanceof Uint8Array ? file.bytes : new Uint8Array(file.bytes)
+  const { PDFDocument } = await import('pdf-lib')
   const pdf = await PDFDocument.load(bytes, { ignoreEncryption: true, updateMetadata: false })
   const pages: PageModel[] = pdf.getPages().map((p, index) => {
     const { width, height } = p.getSize()
@@ -186,6 +181,7 @@ export const useDocStore = create<DocState>((set, get) => ({
       }
       return { docs, history, order, activeKey: built[built.length - 1].key }
     })
+    enterPdfEditor()
   },
 
   setActive: (key) => set({ activeKey: key }),
@@ -207,8 +203,7 @@ export const useDocStore = create<DocState>((set, get) => ({
       delete docs[key]
       delete history[key]
       const order = s.order.filter((k) => k !== key)
-      const activeKey =
-        s.activeKey === key ? (order[order.length - 1] ?? null) : s.activeKey
+      const activeKey = s.activeKey === key ? (order[order.length - 1] ?? null) : s.activeKey
       return { docs, history, order, activeKey }
     })
     return true
@@ -221,7 +216,13 @@ export const useDocStore = create<DocState>((set, get) => ({
       return {
         docs: {
           ...s.docs,
-          [key]: { ...doc, path, name: path.split('/').pop() ?? doc.name, originalBytes: bytes, dirty: false }
+          [key]: {
+            ...doc,
+            path,
+            name: path.split('/').pop() ?? doc.name,
+            originalBytes: bytes,
+            dirty: false
+          }
         }
       }
     }),
@@ -252,10 +253,7 @@ export const useDocStore = create<DocState>((set, get) => ({
       last.coalesceKey === opts.coalesceKey &&
       now - last.at < COALESCE_MS
     ) {
-      undo = [
-        ...undo.slice(0, -1),
-        { ...last, inverse: [...inverse, ...last.inverse], at: now }
-      ]
+      undo = [...undo.slice(0, -1), { ...last, inverse: [...inverse, ...last.inverse], at: now }]
     } else {
       undo = [...undo, { label, inverse, coalesceKey: opts?.coalesceKey, at: now }]
       if (undo.length > HISTORY_LIMIT) undo = undo.slice(undo.length - HISTORY_LIMIT)
@@ -333,7 +331,7 @@ export const useDocStore = create<DocState>((set, get) => ({
     get().mutate(key, 'Seite drehen', (d) => {
       for (const i of indices) {
         const p = d.pages[i]
-        if (p) p.rotation = (((p.rotation + delta) % 360) + 360) % 360 as Rotation
+        if (p) p.rotation = ((((p.rotation + delta) % 360) + 360) % 360) as Rotation
       }
     }),
 
@@ -378,9 +376,7 @@ export const useDocStore = create<DocState>((set, get) => ({
 
   movePages: (key, indices, toIndex) =>
     get().mutate(key, 'Seiten umsortieren', (d) => {
-      const picked = indices
-        .map((i) => d.pages[i])
-        .filter((p): p is PageModel => Boolean(p))
+      const picked = indices.map((i) => d.pages[i]).filter((p): p is PageModel => Boolean(p))
       const pickedIds = new Set(picked.map((p) => p.id))
       const rest = d.pages.filter((p) => !pickedIds.has(p.id))
       const before = d.pages.slice(0, toIndex).filter((p) => !pickedIds.has(p.id)).length
@@ -405,10 +401,17 @@ export const useDocStore = create<DocState>((set, get) => ({
       d.pages.splice(atIndex, 0, ...newPages)
     }),
 
+  // Annotationen leben in der Overlay-Ebene – sie dürfen die Seite NICHT neu
+  // rendern lassen (structural: false), sonst ruckelt/bricht das Verschieben.
   addAnnotation: (key, annotation) =>
-    get().mutate(key, 'Objekt hinzufügen', (d) => {
-      ;(d.annotations[annotation.pageId] ??= []).push(annotation)
-    }),
+    get().mutate(
+      key,
+      'Objekt hinzufügen',
+      (d) => {
+        ;(d.annotations[annotation.pageId] ??= []).push(annotation)
+      },
+      { structural: false }
+    ),
 
   updateAnnotation: (key, id, patch, opts) =>
     get().mutate(
@@ -423,26 +426,41 @@ export const useDocStore = create<DocState>((set, get) => ({
           }
         }
       },
-      { coalesceKey: opts?.coalesceKey }
+      { coalesceKey: opts?.coalesceKey, structural: false }
     ),
 
   removeAnnotations: (key, ids) =>
-    get().mutate(key, 'Objekt löschen', (d) => {
-      const drop = new Set(ids)
-      for (const pageId of Object.keys(d.annotations)) {
-        d.annotations[pageId] = d.annotations[pageId].filter((a) => !drop.has(a.id))
-      }
-    }),
+    get().mutate(
+      key,
+      'Objekt löschen',
+      (d) => {
+        const drop = new Set(ids)
+        for (const pageId of Object.keys(d.annotations)) {
+          d.annotations[pageId] = d.annotations[pageId].filter((a) => !drop.has(a.id))
+        }
+      },
+      { structural: false }
+    ),
 
   addRedaction: (key, redaction) =>
-    get().mutate(key, 'Schwärzung', (d) => {
-      ;(d.redactions[redaction.pageId] ??= []).push(redaction)
-    }),
+    get().mutate(
+      key,
+      'Schwärzung',
+      (d) => {
+        ;(d.redactions[redaction.pageId] ??= []).push(redaction)
+      },
+      { structural: false }
+    ),
 
   removeRedaction: (key, id) =>
-    get().mutate(key, 'Schwärzung entfernen', (d) => {
-      for (const pageId of Object.keys(d.redactions)) {
-        d.redactions[pageId] = d.redactions[pageId].filter((r) => r.id !== id)
-      }
-    })
+    get().mutate(
+      key,
+      'Schwärzung entfernen',
+      (d) => {
+        for (const pageId of Object.keys(d.redactions)) {
+          d.redactions[pageId] = d.redactions[pageId].filter((r) => r.id !== id)
+        }
+      },
+      { structural: false }
+    )
 }))

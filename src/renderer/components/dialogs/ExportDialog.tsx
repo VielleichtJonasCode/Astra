@@ -17,7 +17,9 @@ export function ExportDialog({ onClose }: { onClose: () => void }): JSX.Element 
   const selectedPages = useUiStore((s) => s.selectedPages)
 
   const [target, setTarget] = useState<Target>('pdf')
-  const [range, setRange] = useState(selectedPages.length ? formatRanges(selectedPages) : `1-${doc.pages.length}`)
+  const [range, setRange] = useState(
+    selectedPages.length ? formatRanges(selectedPages) : `1-${doc.pages.length}`
+  )
   const [dpi, setDpi] = useState(150)
   const [busy, setBusy] = useState(false)
 
@@ -32,7 +34,10 @@ export function ExportDialog({ onClose }: { onClose: () => void }): JSX.Element 
           return
         }
         const path = await window.api.saveDialog({
-          defaultName: doc.name.replace(/\.pdf$/i, target === 'pdf-range' ? '-auszug.pdf' : '-kopie.pdf')
+          defaultName: doc.name.replace(
+            /\.pdf$/i,
+            target === 'pdf-range' ? '-auszug.pdf' : '-kopie.pdf'
+          )
         })
         if (!path) return
         const bytes = await buildOutputPdf(doc, { pageIndices: indices })
@@ -101,7 +106,15 @@ export function ExportDialog({ onClose }: { onClose: () => void }): JSX.Element 
         )}
         {isImage && (
           <Field label="Auflösung">
-            <NumberInput value={dpi} min={72} max={600} step={24} suffix=" dpi" onChange={setDpi} width={100} />
+            <NumberInput
+              value={dpi}
+              min={72}
+              max={600}
+              step={24}
+              suffix=" dpi"
+              onChange={setDpi}
+              width={100}
+            />
           </Field>
         )}
       </FieldGroup>

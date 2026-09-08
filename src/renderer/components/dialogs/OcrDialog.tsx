@@ -134,7 +134,8 @@ export function OcrDialog({ onClose }: { onClose: () => void }): JSX.Element {
         />
       )}
       <p style={{ fontSize: 11, color: 'var(--text-tertiary)', margin: 0 }}>
-        Sprachdaten (~10–15 MB je Sprache) werden beim ersten Mal geladen und lokal zwischengespeichert.
+        Sprachdaten (~10–15 MB je Sprache) werden beim ersten Mal geladen und lokal
+        zwischengespeichert.
       </p>
     </Sheet>
   )

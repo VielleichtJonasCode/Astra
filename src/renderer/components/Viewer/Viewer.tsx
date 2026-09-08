@@ -11,7 +11,7 @@ import { AnnotationLayer } from '../../annotations/AnnotationLayer'
 import { FindBar } from './FindBar'
 import { useSearchStore } from '../../store/searchStore'
 import { registerViewerScroll } from '../../lib/viewerBus'
-import { getTextBlocks, blockAtPoint } from '../../pdf/textBlocks'
+import { getTextBlocks, blockAtPoint, getTextItemBoxes } from '../../pdf/textBlocks'
 import type { Point } from '../../lib/geometry'
 import './viewer.css'
 
@@ -62,7 +62,9 @@ export function Viewer(): JSX.Element {
   const { maxWpt, curWpt, curHpt } = useMemo(() => {
     let maxW = 1
     for (const p of pages) maxW = Math.max(maxW, pageDisplaySize(p).width)
-    const cur = pages[currentPage - 1] ? pageDisplaySize(pages[currentPage - 1]) : { width: 1, height: 1 }
+    const cur = pages[currentPage - 1]
+      ? pageDisplaySize(pages[currentPage - 1])
+      : { width: 1, height: 1 }
     return { maxWpt: maxW, curWpt: cur.width, curHpt: cur.height }
   }, [pages, currentPage])
 
@@ -70,7 +72,8 @@ export function Viewer(): JSX.Element {
     const availW = Math.max(1, box.w - PAD * 2)
     const availH = Math.max(1, box.h - PAD * 2)
     if (zoomMode === 'fit-width') return clamp(availW / maxWpt, 0.08, 8 * PT)
-    if (zoomMode === 'fit-page') return clamp(Math.min(availW / curWpt, availH / curHpt), 0.08, 8 * PT)
+    if (zoomMode === 'fit-page')
+      return clamp(Math.min(availW / curWpt, availH / curHpt), 0.08, 8 * PT)
     return zoom * PT
   }, [zoomMode, zoom, box.w, box.h, maxWpt, curWpt, curHpt])
 
@@ -199,7 +202,22 @@ export function Viewer(): JSX.Element {
       {searchOpen && (
         <FindBar proxy={proxy} layouts={layouts} cssScale={cssScale} scrollRef={scrollRef} />
       )}
-      <div className="viewer__scroll" ref={attachScroll} onScroll={onScroll} onWheel={onWheel}>
+      <div
+        className="viewer__scroll"
+        ref={attachScroll}
+        onScroll={onScroll}
+        onWheel={onWheel}
+        onPointerDown={(e) => {
+          const ui = useUiStore.getState()
+          if (ui.tool !== 'select') return
+          const el = e.target as HTMLElement
+          // Klicks im offenen Textfeld (Cursor setzen) dürfen die Auswahl/Bearbeitung
+          // NICHT beenden.
+          if (!el.closest('[data-anno], .anno-handle, .anno-textarea')) {
+            ui.clearSelection()
+          }
+        }}
+      >
         {error ? (
           <div className="viewer__state">
             <EmptyState icon="info" title="Kann nicht angezeigt werden" hint={error} />
@@ -233,6 +251,11 @@ export function Viewer(): JSX.Element {
                       const blocks = await getTextBlocks(proxy, pm.source.index + 1, pm.rotation)
                       return blockAtPoint(blocks, pt.x, pt.y)
                     }}
+                    getTextBoxes={async () => {
+                      const pm = doc.pages[l.index - 1]
+                      if (!proxy || pm.source.kind !== 'original') return []
+                      return getTextItemBoxes(proxy, pm.source.index + 1, pm.rotation)
+                    }}
                   />
                 }
               />
@@ -247,9 +270,17 @@ export function Viewer(): JSX.Element {
       </div>
 
       <div className="viewer__hud no-drag">
-        <IconButton name="zoom-out" label="Verkleinern" onClick={() => useUiStore.getState().zoomOut()} />
+        <IconButton
+          name="zoom-out"
+          label="Verkleinern"
+          onClick={() => useUiStore.getState().zoomOut()}
+        />
         <span className="zoomval">{Math.round((cssScale / PT) * 100)} %</span>
-        <IconButton name="zoom-in" label="Vergrößern" onClick={() => useUiStore.getState().zoomIn()} />
+        <IconButton
+          name="zoom-in"
+          label="Vergrößern"
+          onClick={() => useUiStore.getState().zoomIn()}
+        />
       </div>
     </div>
   )

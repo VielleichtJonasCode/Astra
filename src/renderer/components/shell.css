@@ -44,6 +44,27 @@
   gap: 2px;
   -webkit-app-region: no-drag;
 }
+.titlebar__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px 0 4px;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-medium);
+  color: var(--text-secondary);
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+.titlebar__back:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.titlebar__back:active {
+  background: var(--bg-active);
+}
 
 /* ---------- TabBar ---------- */
 .tabbar {
@@ -143,10 +164,41 @@
 .sidebar {
   width: var(--sidebar-w);
   flex-shrink: 0;
+  position: relative;
   display: flex;
   flex-direction: column;
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border-inset);
+}
+
+.panel-resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 9px;
+  z-index: 30;
+  cursor: col-resize;
+  -webkit-app-region: no-drag;
+}
+.panel-resizer--right {
+  right: -5px;
+}
+.panel-resizer--left {
+  left: -5px;
+}
+.panel-resizer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 4px;
+  width: 1px;
+  background: transparent;
+  transition: background var(--dur-fast);
+}
+.panel-resizer:hover::after,
+.panel-resizer:active::after {
+  background: var(--accent);
 }
 .sidebar__head,
 .inspector__head {
@@ -181,6 +233,7 @@
 .inspector {
   width: var(--inspector-w);
   flex-shrink: 0;
+  position: relative;
   display: flex;
   flex-direction: column;
   background: var(--bg-content);

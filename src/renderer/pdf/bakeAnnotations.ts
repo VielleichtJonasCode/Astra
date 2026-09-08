@@ -28,7 +28,10 @@ interface PageCtx {
 }
 
 /** Overlay-Rechteck (oben-links) → pdf-lib-Zeichenraum (unten-links, unrotiert). */
-function toPdf(r: Rect, ctx: PageCtx): { x: number; y: number; w: number; h: number; angle: number } {
+function toPdf(
+  r: Rect,
+  ctx: PageCtx
+): { x: number; y: number; w: number; h: number; angle: number } {
   const { dispW, dispH, rotation } = ctx
   const uw = rotation === 90 || rotation === 270 ? dispH : dispW
   const uh = rotation === 90 || rotation === 270 ? dispW : dispH
@@ -107,7 +110,25 @@ export async function bakePageAnnotations(
           await drawStamp(page, a, ctx, fonts)
           break
         case 'signature':
-          drawSignature(page, a, ctx, opacity)
+          if (a.assetId) {
+            await drawImage(
+              out,
+              page,
+              doc,
+              {
+                id: a.id,
+                pageId: a.pageId,
+                rect: a.rect,
+                opacity: a.opacity,
+                kind: 'image',
+                assetId: a.assetId
+              },
+              ctx,
+              opacity
+            )
+          } else {
+            drawSignature(page, a, ctx, opacity)
+          }
           break
       }
     } catch (err) {
@@ -129,13 +150,14 @@ async function drawText(
   const text = sanitize(a.text)
 
   if (a.cover) {
+    const cb = toPdf(a.cover.rect ?? a.rect, ctx)
     page.drawRectangle({
-      x: box.x,
-      y: box.y,
-      width: box.w,
-      height: box.h,
+      x: cb.x,
+      y: cb.y,
+      width: cb.w,
+      height: cb.h,
       color: col(a.cover.color),
-      rotate: degrees(box.angle)
+      rotate: degrees(cb.angle)
     })
   }
 
@@ -163,7 +185,11 @@ async function drawText(
   }
 }
 
-function safeWidth(font: { widthOfTextAtSize: (t: string, s: number) => number }, t: string, size: number): number {
+function safeWidth(
+  font: { widthOfTextAtSize: (t: string, s: number) => number },
+  t: string,
+  size: number
+): number {
   try {
     return font.widthOfTextAtSize(t, size)
   } catch {
@@ -320,7 +346,14 @@ async function drawImage(
   const img =
     asset.mime === 'image/png' ? await out.embedPng(asset.bytes) : await out.embedJpg(asset.bytes)
   const b = toPdf(a.rect, ctx)
-  page.drawImage(img, { x: b.x, y: b.y, width: b.w, height: b.h, opacity, rotate: degrees(b.angle) })
+  page.drawImage(img, {
+    x: b.x,
+    y: b.y,
+    width: b.w,
+    height: b.h,
+    opacity,
+    rotate: degrees(b.angle)
+  })
 }
 
 function drawNote(page: PDFPage, a: NoteAnnotation, ctx: PageCtx): void {
@@ -338,7 +371,12 @@ function drawNote(page: PDFPage, a: NoteAnnotation, ctx: PageCtx): void {
   })
 }
 
-async function drawStamp(page: PDFPage, a: StampAnnotation, ctx: PageCtx, fonts: FontBook): Promise<void> {
+async function drawStamp(
+  page: PDFPage,
+  a: StampAnnotation,
+  ctx: PageCtx,
+  fonts: FontBook
+): Promise<void> {
   const b = toPdf(a.rect, ctx)
   const color = col(a.color)
   page.drawRectangle({

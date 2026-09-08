@@ -49,7 +49,13 @@ function ThumbnailImpl({
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {
           io.disconnect()
-          loadThumbnail(proxy, docKey, page.id, page.source.kind === 'original' ? page.source.index + 1 : 1, page.rotation)
+          loadThumbnail(
+            proxy,
+            docKey,
+            page.id,
+            page.source.kind === 'original' ? page.source.index + 1 : 1,
+            page.rotation
+          )
             .then((u) => alive && setUrl(u))
             .catch(() => undefined)
         }
@@ -72,7 +78,12 @@ function ThumbnailImpl({
         setNodeRef(node)
         elRef.current = node
       }}
-      className={cx('thumb', selected && 'is-selected', current && 'is-current', isDragging && 'is-dragging')}
+      className={cx(
+        'thumb',
+        selected && 'is-selected',
+        current && 'is-current',
+        isDragging && 'is-dragging'
+      )}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       onClick={(e) => onSelect(index, e)}
       onContextMenu={(e) => onContextMenu(index, e)}

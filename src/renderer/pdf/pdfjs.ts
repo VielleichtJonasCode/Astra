@@ -20,10 +20,7 @@ export interface OpenedPdf {
 }
 
 /** Öffnet ein PDF mit pdf.js, inkl. Passwort-Rückfrage. */
-export async function openPdf(
-  bytes: Uint8Array,
-  askPassword?: PasswordPrompt
-): Promise<OpenedPdf> {
+export async function openPdf(bytes: Uint8Array, askPassword?: PasswordPrompt): Promise<OpenedPdf> {
   let password: string | undefined
   // pdf.js überträgt den Buffer in den Worker (detached) – Kopie geben.
   const data = bytes.slice()

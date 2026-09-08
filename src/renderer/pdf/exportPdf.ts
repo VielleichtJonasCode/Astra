@@ -4,12 +4,23 @@ import { bakePageAnnotations, hasBakeableContent } from './bakeAnnotations'
 import { bakeOverlays, hasOverlays } from './ops/overlays'
 import { FontBook } from './fonts'
 import { applyRedactionsAndSecurity, needsMuPdfPass } from './mupdf/postProcess'
+import { appendMacSignature } from '../sign/trailer'
+import { useSettingsStore } from '../store/settingsStore'
 
 export interface ExportOptions {
   /** Nur diese Seitenindizes (0-basiert) ausgeben – für "Auswahl extrahieren". */
   pageIndices?: number[]
   /** Metadaten aus dem Modell schreiben. */
   writeMetadata?: boolean
+  /** Mac-Signatur erzwingen (true) oder unterdrücken (false); Standard folgt der Einstellung. */
+  signWithMacKey?: boolean
+}
+
+/** true, wenn `buildOutputPdf` für dieses Dokument die Mac-Signatur anhängen würde. */
+export function willMacSign(doc: PdfDoc, options: ExportOptions = {}): boolean {
+  if (options.pageIndices) return false
+  const on = options.signWithMacKey ?? useSettingsStore.getState().autoSign
+  return on && hasHandSignature(doc)
 }
 
 /**
@@ -17,7 +28,10 @@ export interface ExportOptions {
  * 1. pdf-lib: Seitenreihenfolge, Rotation, Größe, eingefügte Seiten, Annotationen
  * 2. optional MuPDF: echte Redaktionen, Verschlüsselung, Kompression
  */
-export async function buildOutputPdf(doc: PdfDoc, options: ExportOptions = {}): Promise<Uint8Array> {
+export async function buildOutputPdf(
+  doc: PdfDoc,
+  options: ExportOptions = {}
+): Promise<Uint8Array> {
   const original = await PDFDocument.load(doc.originalBytes, {
     ignoreEncryption: true,
     updateMetadata: false
@@ -123,5 +137,23 @@ export async function buildOutputPdf(doc: PdfDoc, options: ExportOptions = {}): 
     bytes = await applyRedactionsAndSecurity(bytes, doc, options)
   }
 
+  // Enthält das Dokument eine handschriftliche Unterschrift, wird zusätzlich
+  // eine unsichtbare Mac-Signatur angehängt (prüfbar im Signatur-Werkzeug).
+  if (willMacSign(doc, options)) {
+    try {
+      bytes = await appendMacSignature(bytes)
+    } catch (err) {
+      // Signieren darf das Speichern nie verhindern.
+      // eslint-disable-next-line no-console
+      console.warn('Mac-Signatur konnte nicht angehängt werden', err)
+    }
+  }
+
   return bytes
+}
+
+function hasHandSignature(doc: PdfDoc): boolean {
+  return Object.values(doc.annotations).some((list) =>
+    (list ?? []).some((a) => a.kind === 'signature')
+  )
 }

@@ -2,6 +2,7 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { forwardRef } from 'react'
 import { cx } from '../../lib/cx'
 import { Icon, type IconName } from './Icon'
+import { Tooltip } from './Tooltip'
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 type ButtonSize = 'sm' | 'md' | 'lg'
@@ -45,23 +46,31 @@ export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>
   active?: boolean
   large?: boolean
   size?: number
+  /** Tooltip unterdrücken (z. B. wenn außen schon einer sitzt). */
+  noTooltip?: boolean
+  tooltipPlacement?: 'bottom' | 'top'
 }
 
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
-  { name, label, active, large, size, className, ...rest },
+  { name, label, active, large, size, className, noTooltip, tooltipPlacement, ...rest },
   ref
 ) {
-  return (
+  const btn = (
     <button
       ref={ref}
       type="button"
       className={cx('iconbtn', large && 'iconbtn--lg', active && 'is-active', className)}
       aria-label={label}
       aria-pressed={active}
-      title={label}
       {...rest}
     >
       <Icon name={name} size={size ?? (large ? 18 : 17)} />
     </button>
+  )
+  if (noTooltip) return btn
+  return (
+    <Tooltip label={label} placement={tooltipPlacement}>
+      {btn}
+    </Tooltip>
   )
 })

@@ -17,10 +17,10 @@ import { PasswordDialog } from './PasswordDialog'
 import { OcrDialog } from './OcrDialog'
 import { BatchDialog } from './BatchDialog'
 import { RedactAssistantDialog } from './RedactAssistantDialog'
+import { SignatureDialog } from './SignatureDialog'
+import { SettingsDialog } from './SettingsDialog'
 
-const TITLES: Partial<Record<DialogId, string>> = {
-  preferences: 'Einstellungen'
-}
+const TITLES: Partial<Record<DialogId, string>> = {}
 
 export function DialogHost(): JSX.Element | null {
   const active = useDialogStore((s) => s.active)
@@ -63,6 +63,10 @@ export function DialogHost(): JSX.Element | null {
       return <BatchDialog onClose={close} />
     case 'redactAssistant':
       return <RedactAssistantDialog onClose={close} />
+    case 'signature':
+      return <SignatureDialog onClose={close} />
+    case 'preferences':
+      return <SettingsDialog onClose={close} />
     default:
       return (
         <Sheet

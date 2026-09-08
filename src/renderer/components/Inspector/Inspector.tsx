@@ -3,22 +3,30 @@ import { useUiStore } from '../../store/uiStore'
 import { pageDisplaySize } from '../../pdf/model'
 import { FieldGroup, Field } from '../common/Field'
 import { EmptyState } from '../common/misc'
+import { PanelResizer } from '../common/PanelResizer'
 import { AnnotationProperties } from './AnnotationProperties'
 
 export function Inspector(): JSX.Element {
   const doc = useDocStore((s) => (s.activeKey ? s.docs[s.activeKey] : null))
   const currentPage = useUiStore((s) => s.currentPage)
   const selected = useUiStore((s) => s.selectedAnnotations)
+  const width = useUiStore((s) => s.inspectorWidth)
+  const setWidth = useUiStore((s) => s.setInspectorWidth)
 
   const page = doc?.pages[currentPage - 1]
   const size = page ? pageDisplaySize(page) : null
 
   return (
-    <aside className="inspector">
+    <aside className="inspector" style={{ width }}>
+      <PanelResizer edge="left" width={width} onChange={setWidth} />
       <div className="inspector__head">Informationen</div>
       <div className="inspector__scroll">
         {!doc ? (
-          <EmptyState icon="info" title="Keine Auswahl" hint="Öffne ein PDF, um Details zu sehen." />
+          <EmptyState
+            icon="info"
+            title="Keine Auswahl"
+            hint="Öffne ein PDF, um Details zu sehen."
+          />
         ) : selected.length > 0 ? (
           <AnnotationProperties docKey={doc.key} />
         ) : (

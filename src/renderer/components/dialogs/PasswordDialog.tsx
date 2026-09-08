@@ -15,7 +15,10 @@ export function PasswordDialog({ onClose }: { onClose: () => void }): JSX.Elemen
 
   const apply = (): void => {
     mutate(doc.key, mode === 'set' ? 'Passwort setzen' : 'Passwort entfernen', (d) => {
-      d.encryption = mode === 'remove' ? null : { userPassword: user || undefined, ownerPassword: owner || undefined }
+      d.encryption =
+        mode === 'remove'
+          ? null
+          : { userPassword: user || undefined, ownerPassword: owner || undefined }
     })
     toast.success(
       mode === 'remove'
@@ -61,7 +64,14 @@ export function PasswordDialog({ onClose }: { onClose: () => void }): JSX.Elemen
           </>
         )}
         {mode === 'remove' && (
-          <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0, gridColumn: '1 / -1' }}>
+          <p
+            style={{
+              fontSize: 12,
+              color: 'var(--text-secondary)',
+              margin: 0,
+              gridColumn: '1 / -1'
+            }}
+          >
             Beim Sichern wird die Verschlüsselung entfernt (das PDF ist derzeit entsperrt geöffnet).
           </p>
         )}

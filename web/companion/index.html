@@ -1,0 +1,1024 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Astra unterwegs</title>
+<meta name="theme-color" content="#0b0b12" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Astra" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link
+  rel="apple-touch-icon"
+  href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%230b0b12'/%3E%3Ccircle cx='90' cy='90' r='42' fill='none' stroke='%235b8cff' stroke-width='9'/%3E%3Cellipse cx='90' cy='90' rx='70' ry='24' fill='none' stroke='%23e2b64a' stroke-width='9' transform='rotate(-20 90 90)'/%3E%3C/svg%3E"
+/>
+<style>
+  :root {
+    --bg: #0b0b12; --surface: #15161d; --surface-2: #1b1c25; --field: #0e0f16;
+    --line: #2a2b36; --line-soft: #23242e;
+    --text: #f2f3f7; --dim: #9aa0ad; --faint: #6b7180;
+    --accent: #5b8cff; --ok: #2fd07a; --warn: #ffb020; --bad: #ff5062;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: 600px; margin: 0 auto;
+    padding: 0 16px calc(84px + env(safe-area-inset-bottom));
+  }
+  .appbar {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; gap: 10px;
+    padding: calc(env(safe-area-inset-top) + 12px) 2px 12px;
+    background: linear-gradient(var(--bg) 68%, transparent);
+  }
+  .appbar .logo { width: 28px; height: 28px; flex: none; }
+  .appbar h1 { font-size: 16px; margin: 0; font-weight: 650; letter-spacing: -.01em; }
+  .appbar .status { display: block; color: var(--faint); font-size: 11px; margin-top: 1px; }
+  .screen.hidden { display: none; }
+
+  .card { background: var(--surface); border: 1px solid var(--line-soft); border-radius: 18px; padding: 16px; margin-bottom: 14px; }
+  .lead { margin: 0 0 14px; color: var(--dim); font-size: 13px; line-height: 1.5; }
+  .sec { margin: 0 0 8px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+  .hint { font-size: 12px; color: var(--faint); margin: 10px 0 0; line-height: 1.5; }
+  code { font: 12px ui-monospace, Menlo, monospace; background: var(--surface-2); padding: 1px 5px; border-radius: 5px; }
+  a { color: var(--accent); }
+  .hidden { display: none; }
+
+  .btn, .pick > span {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    border: 1px solid var(--line); background: var(--surface-2); color: var(--text);
+    border-radius: 12px; padding: 12px 16px; font: inherit; font-weight: 600; cursor: pointer;
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.ghost { background: transparent; }
+  .btn.block, .pick.block > span { width: 100%; }
+  .btn:disabled { opacity: .4; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .btn-row.stack { flex-direction: column; }
+  .pick { display: block; position: relative; }
+  .pick + .pick { margin-top: 8px; }
+  .pick input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; }
+
+  .field { margin-top: 12px; }
+  .field label { display: block; font-size: 12px; color: var(--dim); margin-bottom: 5px; }
+  input[type=text], input[type=password], textarea {
+    width: 100%; background: var(--field); color: var(--text);
+    border: 1px solid var(--line); border-radius: 11px; padding: 11px; font: inherit;
+  }
+  textarea { min-height: 80px; font: 12px/1.45 ui-monospace, Menlo, monospace; resize: vertical; margin-top: 8px; }
+
+  .seg { display: flex; gap: 3px; background: var(--field); border: 1px solid var(--line); border-radius: 12px; padding: 3px; margin-bottom: 14px; }
+  .seg button { flex: 1; border: 0; background: none; color: var(--dim); font: inherit; font-weight: 600; font-size: 13px; padding: 8px 4px; border-radius: 9px; }
+  .seg button.on { background: var(--surface-2); color: var(--text); }
+
+  .switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; font-size: 14px; border-top: 1px solid var(--line-soft); }
+  .switch:first-child { border-top: 0; }
+  .switch small { display: block; color: var(--faint); font-size: 12px; font-weight: 400; }
+  .switch input { width: 44px; height: 26px; flex: none; }
+
+  details.box { border: 1px solid var(--line-soft); border-radius: 12px; padding: 0 14px; margin-top: 12px; }
+  details.box > summary { list-style: none; cursor: pointer; padding: 12px 0; font-weight: 600; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+  details.box > summary::-webkit-details-marker { display: none; }
+  details.box[open] { padding-bottom: 12px; }
+
+  .pages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0 0; }
+  .pages figure { position: relative; margin: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--field); aspect-ratio: 3/4; }
+  .pages img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .pages figcaption { position: absolute; left: 5px; top: 5px; background: rgba(0,0,0,.6); border-radius: 6px; font-size: 11px; padding: 1px 6px; }
+  .pages .rm { position: absolute; right: 5px; top: 5px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: rgba(0,0,0,.65); color: #fff; font-size: 14px; display: grid; place-items: center; }
+
+  .result { border-radius: 14px; padding: 14px; margin-top: 12px; background: var(--field); border: 1px solid var(--line); }
+  .result .head { display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 14px; }
+  .dot { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: var(--dim); font-size: 15px; flex: none; }
+  .result.ok { border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); } .result.ok .dot { background: var(--ok); }
+  .result.foreign .dot, .result.modified .dot { background: var(--warn); }
+  .result.invalid { border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); } .result.invalid .dot { background: var(--bad); }
+  dl { display: grid; grid-template-columns: 82px 1fr; gap: 5px 10px; margin: 12px 0 0; font-size: 13px; }
+  dt { color: var(--dim); } dd { margin: 0; word-break: break-all; }
+  .pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: var(--surface-2); color: var(--dim); }
+  .pill.mine { background: var(--ok); color: #fff; margin-left: 6px; }
+  .keyid { font: 650 19px/1.35 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .05em; color: var(--accent); word-break: break-all; }
+  .steps { margin: 8px 0 0; padding-left: 20px; color: var(--dim); font-size: 12.5px; line-height: 1.6; }
+  .steps b { color: var(--text); }
+  .notice { display: flex; gap: 9px; align-items: flex-start; background: color-mix(in srgb, var(--warn) 12%, transparent); border: 1px solid color-mix(in srgb, var(--warn) 40%, var(--line)); border-radius: 12px; padding: 11px 13px; font-size: 13px; margin-bottom: 12px; }
+
+  #toast {
+    position: fixed; left: 16px; right: 16px; z-index: 60;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
+    margin: 0 auto; max-width: 440px;
+    padding: 12px 15px; border-radius: 14px;
+    font-size: 13px; line-height: 1.45; text-align: center;
+    background: var(--surface-2); color: var(--text);
+    border: 1px solid var(--line);
+    box-shadow: 0 10px 34px rgba(0,0,0,.5);
+    opacity: 0; transform: translateY(8px); transition: opacity .18s, transform .18s;
+    pointer-events: none;
+  }
+  #toast.show { opacity: 1; transform: none; }
+  #toast.bad { border-color: color-mix(in srgb, var(--bad) 55%, var(--line)); }
+  #toast.ok { border-color: color-mix(in srgb, var(--ok) 55%, var(--line)); }
+
+  /* Schwebende Pillen-Leiste, dicht am unteren Rand (knapp über dem
+     Home-Indikator), damit sie nicht zu hoch wirkt. */
+  .tabbar {
+    position: fixed; left: 0; right: 0; z-index: 20;
+    bottom: max(4px, calc(env(safe-area-inset-bottom, 0px) - 20px));
+    display: flex; justify-content: center;
+    padding: 0 16px;
+    pointer-events: none; /* Leerraum neben der Pille klickt durch */
+  }
+  .tabbar__inner {
+    pointer-events: auto;
+    display: flex; gap: 2px;
+    width: 100%; max-width: 440px;
+    padding: 7px 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.6), 0 3px 12px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.05);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+  }
+  .tabbar button {
+    flex: 1; border: 0; background: none; color: var(--faint); font: inherit; font-size: 10.5px; font-weight: 600;
+    display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; border-radius: 14px;
+  }
+  .tabbar button.on { background: rgba(255,255,255,.06); }
+  .tabbar button svg { width: 22px; height: 22px; }
+  .tabbar button.on { color: var(--accent); }
+
+  .docbox { white-space: pre-wrap; font: 13px/1.6 -apple-system, sans-serif; background: var(--field); border: 1px solid var(--line); border-radius: 12px; padding: 13px; max-height: 56vh; overflow: auto; }
+  .lq p { color: var(--text); font-weight: 600; margin: 0 0 10px; font-size: 14px; }
+  .lq .opt { display: block; width: 100%; text-align: left; margin: 6px 0; padding: 12px 13px; border-radius: 11px; border: 1px solid var(--line); background: var(--field); color: var(--text); font: inherit; font-size: 13.5px; }
+  .lq .opt.ok { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 15%, var(--field)); }
+  .lq .opt.no { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 15%, var(--field)); }
+  .lq .expl { margin-top: 10px; font-size: 12.5px; color: var(--dim); line-height: 1.5; }
+  .lqnav { display: flex; justify-content: space-between; margin-top: 14px; }
+  .lqnav button { background: var(--surface-2); border: 1px solid var(--line); color: var(--text); border-radius: 11px; padding: 10px 16px; font: inherit; font-weight: 600; }
+  .perf { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .perfrow { display: grid; grid-template-columns: 84px 1fr 44px; align-items: center; gap: 8px; font-size: 12px; }
+  .perfrow > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dim); }
+  .bar { height: 7px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+  .bar.weak i { background: var(--bad); }
+  .perfval { text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; }
+
+  #editor { position: fixed; inset: 0; z-index: 50; background: #000; display: flex; flex-direction: column; }
+  #editor.hidden { display: none; }
+  .ed-stage { position: relative; flex: 1; overflow: hidden; touch-action: none; }
+  #edimg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+  #edsvg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  #edpoly { fill: rgba(91,140,255,.16); stroke: #5b8cff; stroke-width: 2; }
+  .ed-h { position: absolute; width: 32px; height: 32px; margin: -16px 0 0 -16px; border-radius: 50%; border: 2px solid #fff; background: rgba(91,140,255,.55); }
+  .ed-bar { display: flex; gap: 8px; padding: 12px 16px calc(16px + env(safe-area-inset-bottom)); background: var(--surface); }
+  .ed-bar .btn { flex: 1; margin: 0; }
+</style>
+</head>
+<body>
+<div class="appbar">
+  <svg class="logo" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="none" stroke="#5b8cff" stroke-width="1.6"/><ellipse cx="12" cy="12" rx="10" ry="3.4" fill="none" stroke="#e2b64a" stroke-width="1.6" transform="rotate(-20 12 12)"/></svg>
+  <div><h1>Astra</h1><span class="status" id="sub">Notizen scannen &amp; PDFs signieren</span></div>
+</div>
+
+<!-- ============ Scannen ============ -->
+<section id="tab-scan" class="screen">
+  <div class="card">
+    <p class="lead">Seiten fotografieren → sauberes PDF, das du in iCloud ablegst. Astra am Mac sortiert es ein.</p>
+    <label class="pick block"><span>📷 Seiten aufnehmen</span><input type="file" id="scanfile" accept="image/*" capture="environment" multiple></label>
+    <label class="pick block"><span>🖼 Aus Fotos wählen</span><input type="file" id="scanpick" accept="image/*" multiple></label>
+
+    <div class="pages" id="scanpages"></div>
+    <p class="hint" id="scantip" style="display:none">Auf eine Seite tippen, um die Ecken von Hand zu setzen.</p>
+
+    <details class="box">
+      <summary>Optionen <span class="pill">auto</span></summary>
+      <label class="switch"><span>Automatisch zuschneiden &amp; begradigen<small>erkennt die Blattkanten</small></span><input type="checkbox" id="scanauto" checked></label>
+      <label class="switch"><span>Schwarz-Weiß<small>für reinen Text</small></span><input type="checkbox" id="scanbw"></label>
+    </details>
+
+    <div class="field"><label for="scanname">Name (optional)</label>
+      <input type="text" id="scanname" placeholder="z. B. Analysis II – Grenzwerte"></div>
+
+    <div class="btn-row stack">
+      <button class="btn primary block" id="scansave" disabled>Als PDF sichern / in iCloud</button>
+      <button class="btn ghost block" id="scanclear" disabled>Verwerfen</button>
+    </div>
+
+    <details class="box">
+      <summary>So kommt es in iCloud</summary>
+      <ol class="steps">
+        <li>Teilen-Menü → <b>„In Dateien sichern“</b>.</li>
+        <li><b>iCloud Drive → Studium → _Eingang</b> wählen.</li>
+        <li>Am Mac: Astra → <b>Studienplaner</b> → <b>„Einsortieren“</b>.</li>
+      </ol>
+    </details>
+    <p class="hint" id="scanhint"></p>
+  </div>
+</section>
+
+<!-- ============ Lernen ============ -->
+<section id="tab-learn" class="screen hidden">
+  <div class="card">
+    <p class="lead">Öffne <code>lernplan.json</code> aus <b>iCloud Drive → Studium → … → Prüfungsvorbereitung</b>. Quiz &amp; Fortschritt laufen offline.</p>
+    <label class="pick block"><span>Lernpaket öffnen</span><input type="file" id="learnfile" accept=".json,application/json"></label>
+  </div>
+  <div id="learnout" class="hidden">
+    <div class="card">
+      <div id="learnhead" style="font-weight:650;font-size:15px"></div>
+      <div id="learnstats" class="hint" style="margin-top:6px"></div>
+      <div class="seg" id="learntabs" style="margin:14px 0 0">
+        <button data-lt="quiz" class="on">Quiz</button>
+        <button data-lt="summary">Zusammenfassung</button>
+        <button data-lt="plan">Lernplan</button>
+      </div>
+    </div>
+    <div class="card">
+      <div id="lt-quiz"></div>
+      <pre id="lt-summary" class="docbox hidden"></pre>
+      <pre id="lt-plan" class="docbox hidden"></pre>
+      <button class="btn primary block" id="learnsave" style="margin-top:14px">Fortschritt sichern</button>
+      <p class="hint" id="learnsavehint"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Signieren / Prüfen ============ -->
+<section id="tab-sign" class="screen hidden">
+  <div class="seg" id="signseg">
+    <button data-sm="do" class="on">Signieren</button>
+    <button data-sm="check">Prüfen</button>
+  </div>
+
+  <div id="sm-do">
+    <div class="card">
+      <p class="lead">Hängt die unsichtbare <code>%%ASTRA-SIG</code>-Kennung an – identisch zu Astra am Mac.</p>
+      <div class="notice hidden" id="signkeywarn">
+        <span>🔑</span><span>Noch kein Schlüssel auf diesem Gerät. <a href="#" id="signkeylink">Unter „Schlüssel“ importieren</a>.</span>
+      </div>
+      <label class="pick block"><span>PDF wählen</span><input type="file" id="signfile" accept=".pdf,application/pdf"></label>
+      <div id="signout" class="hidden">
+        <div class="result ok"><div class="head"><span class="dot">✓</span><span id="signname"></span></div></div>
+        <button class="btn primary block" id="signsave" style="margin-top:12px">Sichern / Teilen</button>
+      </div>
+      <p class="hint" id="signhint"></p>
+    </div>
+  </div>
+
+  <div id="sm-check" class="hidden">
+    <div class="card">
+      <p class="lead">Prüft, ob ein PDF eine gültige Astra-Signatur trägt – und ob sie von dir ist.</p>
+      <label class="pick block"><span>PDF wählen</span><input type="file" id="verifyfile" accept=".pdf,application/pdf"></label>
+      <div id="verifyout"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Schlüssel ============ -->
+<section id="tab-key" class="screen hidden">
+  <div class="card">
+    <div class="sec">Deine Kennung</div>
+    <div class="keyid" id="keyid">– – – –</div>
+    <p class="hint" id="keymeta"></p>
+    <p class="lead" style="margin-top:12px">Importiere den in Astra gesicherten Schlüssel (<code>.astrakey</code>) – dann signierst du hier mit derselben Identität. Alles bleibt auf diesem Gerät.</p>
+    <label class="pick block"><span>Schlüsseldatei wählen</span><input type="file" id="keyfile"></label>
+    <details class="box">
+      <summary>Datei ausgegraut? Text einfügen</summary>
+      <p class="hint">Die <code>.astrakey</code>-Datei in der Dateien-App antippen, alles kopieren und hier einsetzen (beginnt mit <code>ASTRA-KEY-1</code>).</p>
+      <textarea id="keytext" placeholder="ASTRA-KEY-1&#10;…"></textarea>
+    </details>
+    <div class="field"><label for="keypw">Passwort der Schlüsseldatei</label>
+      <input type="password" id="keypw" autocomplete="off"></div>
+    <div class="btn-row">
+      <button class="btn primary" id="keyimport">Übernehmen</button>
+      <button class="btn ghost" id="keyclear">Vom Gerät entfernen</button>
+    </div>
+  </div>
+  <p class="hint" style="text-align:center">Läuft komplett offline. Nichts wird hochgeladen. <span id="offline"></span></p>
+</section>
+
+<!-- ============ Ecken-Editor ============ -->
+<div id="editor" class="hidden">
+  <div class="ed-stage" id="edstage">
+    <img id="edimg" alt="">
+    <svg id="edsvg"><polygon id="edpoly"></polygon></svg>
+    <div class="ed-h" data-i="0"></div><div class="ed-h" data-i="1"></div>
+    <div class="ed-h" data-i="2"></div><div class="ed-h" data-i="3"></div>
+  </div>
+  <div class="ed-bar">
+    <button class="btn ghost" id="edfull">Ganze Seite</button>
+    <button class="btn ghost" id="edcancel">Abbrechen</button>
+    <button class="btn primary" id="eddone">Übernehmen</button>
+  </div>
+</div>
+
+<nav class="tabbar">
+  <div class="tabbar__inner">
+    <button data-tab="scan" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L8 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Scannen</span></button>
+    <button data-tab="learn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1 2.7 2.5 6 2.5s6-1.5 6-2.5v-5"/><path d="M22 10v6"/></svg><span>Lernen</span></button>
+    <button data-tab="sign"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Signieren</span></button>
+    <button data-tab="key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="m10.9 12.1 7.1-7.1"/><path d="m15 5 3 3"/><path d="m18.5 8.5 2-2"/></svg><span>Schlüssel</span></button>
+  </div>
+</nav>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const KEY_ALG = { name: 'ECDSA', namedCurve: 'P-256' }
+const SIG_ALG = { name: 'ECDSA', hash: 'SHA-256' }
+const MARKER = '\n%%ASTRA-SIG '
+const LS = 'astraweb.key'
+const enc = new TextEncoder(), dec = new TextDecoder()
+
+const b64 = (buf) => { const u = buf instanceof Uint8Array ? buf : new Uint8Array(buf); let s=''; for (const b of u) s+=String.fromCharCode(b); return btoa(s) }
+const unb64 = (s) => { const bin = atob(s.replace(/\s+/g,'')); const o = new Uint8Array(bin.length); for (let i=0;i<bin.length;i++) o[i]=bin.charCodeAt(i); return o }
+const hex = (buf) => Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('')
+const $ = (s) => document.querySelector(s)
+
+let toastTimer = null
+function toast(msg, kind = '') {
+  const el = $('#toast')
+  if (!el) { if (kind === 'bad') alert(msg); return }
+  el.textContent = msg
+  el.className = (kind ? kind + ' ' : '') + 'show'
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => { el.className = el.className.replace('show', '').trim() }, kind === 'bad' ? 5200 : 3200)
+}
+/** Lesbarer Grund für ein fehlgeschlagenes navigator.share (ohne Nutzer-Abbruch). */
+function shareErr(e) {
+  if (!e) return null
+  if (e.name === 'AbortError') return null // Nutzer hat abgebrochen – kein Fehler
+  if (e.name === 'NotAllowedError') return 'Teilen wurde vom Browser blockiert. Nochmal tippen, direkt nach dem Erstellen.'
+  return 'Teilen nicht möglich (' + (e.name || 'Fehler') + '). Datei wird stattdessen zum Download angeboten.'
+}
+
+async function fingerprint(rawPub) {
+  const d = new Uint8Array(await crypto.subtle.digest('SHA-256', rawPub)).slice(0,10)
+  return hex(d).toUpperCase().replace(/(.{4})(?=.)/g,'$1-')
+}
+async function sha256Hex(bytes) { return hex(await crypto.subtle.digest('SHA-256', bytes)) }
+
+let KEY = null // { created, keyId, priv, pub, pubRawB64 }
+
+async function loadStoredKey() {
+  const raw = localStorage.getItem(LS)
+  if (!raw) return null
+  return importPair(JSON.parse(raw))
+}
+async function importPair(s) {
+  const priv = await crypto.subtle.importKey('jwk', s.privateJwk, KEY_ALG, false, ['sign'])
+  const pub = await crypto.subtle.importKey('jwk', s.publicJwk, KEY_ALG, true, ['verify'])
+  const rawPub = new Uint8Array(await crypto.subtle.exportKey('raw', pub))
+  return { created: s.created, keyId: await fingerprint(rawPub), priv, pub, pubRawB64: b64(rawPub) }
+}
+
+async function deriveAes(password, salt) {
+  const base = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey'])
+  return crypto.subtle.deriveKey(
+    { name:'PBKDF2', salt, iterations: 210000, hash:'SHA-256' },
+    base, { name:'AES-GCM', length:256 }, false, ['decrypt'])
+}
+async function decryptKeyFile(text, password) {
+  const body = text.replace('ASTRA-KEY-1','').replace(/\s+/g,'')
+  const p = unb64(body)
+  const salt = p.slice(0,16), iv = p.slice(16,28), ct = p.slice(28)
+  const aes = await deriveAes(password, salt)
+  let json
+  try { json = dec.decode(await crypto.subtle.decrypt({ name:'AES-GCM', iv }, aes, ct)) }
+  catch { throw new Error('Falsches Passwort oder beschädigte Datei') }
+  return JSON.parse(json)
+}
+
+/* ---------- Trailer ---------- */
+function splitTrailer(file) {
+  const t = new TextDecoder('latin1').decode(file)
+  const at = t.lastIndexOf(MARKER)
+  if (at < 0) return null
+  const start = at + MARKER.length
+  const end = t.indexOf('\n', start)
+  try {
+    const block = JSON.parse(t.slice(start, end < 0 ? undefined : end))
+    if (block.v !== 1 || !block.sig || !block.pub) return null
+    return { doc: file.slice(0, at), block }
+  } catch { return null }
+}
+async function appendSignature(pdf) {
+  if (!KEY) throw new Error('Kein Schlüssel geladen')
+  const existing = splitTrailer(pdf)
+  const doc = existing ? existing.doc : pdf
+  const sig = new Uint8Array(await crypto.subtle.sign(SIG_ALG, KEY.priv, doc))
+  const block = {
+    v: 1, alg: 'ES256', keyId: KEY.keyId, created: new Date().toISOString(),
+    hash: await sha256Hex(doc), sig: b64(sig), pub: KEY.pubRawB64,
+    note: 'Signiert mit Astra (Web) auf einem Mobilgerät'
+  }
+  const trailer = enc.encode(MARKER + JSON.stringify(block) + '\n')
+  const out = new Uint8Array(doc.length + trailer.length)
+  out.set(doc, 0); out.set(trailer, doc.length)
+  return out
+}
+async function verifySignature(file) {
+  const parsed = splitTrailer(file)
+  if (!parsed) return { status: 'none' }
+  const { doc, block } = parsed
+  let realId, pub
+  try {
+    realId = await fingerprint(unb64(block.pub))
+    pub = await crypto.subtle.importKey('raw', unb64(block.pub), KEY_ALG, true, ['verify'])
+  } catch { return { status: 'invalid' } }
+  const isMine = KEY && KEY.pubRawB64 === block.pub
+  const hashNow = await sha256Hex(doc)
+  let sigOk = false
+  try { sigOk = await crypto.subtle.verify(SIG_ALG, pub, unb64(block.sig), doc) } catch {}
+  if (!sigOk) return { status: hashNow === block.hash ? 'invalid' : 'modified', keyId: realId, created: block.created }
+  if (hashNow !== block.hash) return { status: 'modified', keyId: realId, created: block.created, note: block.note }
+  return { status: isMine ? 'ok' : 'foreign', keyId: realId, created: block.created, note: block.note, isMine }
+}
+
+/* ---------- Scan-Verarbeitung (ohne Bibliothek) ---------- */
+const CAP_EDGE = 1800   // lange Kante der gespeicherten Seite
+const AN_EDGE = 480     // Analyse-Auflösung
+
+function mkCanvas(w, h) {
+  if (typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(w, h)
+  const c = document.createElement('canvas'); c.width = w; c.height = h; return c
+}
+async function decodeToCanvas(file, maxEdge) {
+  let bmp
+  try { bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }) }
+  catch { bmp = await createImageBitmap(file) }
+  const s = Math.min(1, maxEdge / Math.max(bmp.width, bmp.height))
+  const w = Math.max(1, Math.round(bmp.width * s)), h = Math.max(1, Math.round(bmp.height * s))
+  const cv = mkCanvas(w, h)
+  cv.getContext('2d').drawImage(bmp, 0, 0, w, h)
+  bmp.close && bmp.close()
+  return cv
+}
+
+/* --- Dokument-Ecken schätzen (Sobel-Kantenenergie an den Rändern) --- */
+function detectQuad(canvas) {
+  const w = canvas.width, h = canvas.height
+  const d = canvas.getContext('2d').getImageData(0, 0, w, h).data
+  const g = new Float32Array(w * h)
+  for (let i = 0, j = 0; i < d.length; i += 4, j++) g[j] = d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114
+  const rowL = new Float32Array(h), rowR = new Float32Array(h)
+  const colT = new Float32Array(w), colB = new Float32Array(w)
+  const midX = w >> 1, midY = h >> 1
+  for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+    const gx = -g[(y-1)*w+x-1]-2*g[y*w+x-1]-g[(y+1)*w+x-1]+g[(y-1)*w+x+1]+2*g[y*w+x+1]+g[(y+1)*w+x+1]
+    const gy = -g[(y-1)*w+x-1]-2*g[(y-1)*w+x]-g[(y-1)*w+x+1]+g[(y+1)*w+x-1]+2*g[(y+1)*w+x]+g[(y+1)*w+x+1]
+    const m = Math.abs(gx) + Math.abs(gy)
+    if (x < midX) rowL[y] += m; else rowR[y] += m
+    if (y < midY) colT[x] += m; else colB[x] += m
+  }
+  const peak = (a, lo, hi) => { lo = Math.max(1, lo|0); hi = Math.min(a.length - 1, hi|0); let bi = lo, bv = -1; for (let i = lo; i < hi; i++) if (a[i] > bv) { bv = a[i]; bi = i } return bi }
+  const tL = peak(rowL, 1, h*0.35), tR = peak(rowR, 1, h*0.35)
+  const bL = peak(rowL, h*0.65, h), bR = peak(rowR, h*0.65, h)
+  const lT = peak(colT, 1, w*0.35), lB = peak(colB, 1, w*0.35)
+  const rT = peak(colT, w*0.65, w), rB = peak(colB, w*0.65, w)
+  const dw = Math.min(rT, rB) - Math.max(lT, lB), dh = Math.min(bL, bR) - Math.max(tL, tR)
+  if (dw < w*0.40 || dh < h*0.40) return null
+  // Ecken: x aus linker/rechter Kante, y aus oberer/unterer Kante
+  return [[lT, tL], [rT, tR], [rB, bR], [lB, bL]]
+}
+function insetQuad(w, h, f) { const x = w*f, y = h*f; return [[x, y], [w-x, y], [w-x, h-y], [x, h-y]] }
+
+/* --- Perspektiv-Warp (Homographie, bilinear) --- */
+function solve(A, b) {
+  const n = b.length
+  for (let i = 0; i < n; i++) {
+    let p = i
+    for (let r = i+1; r < n; r++) if (Math.abs(A[r][i]) > Math.abs(A[p][i])) p = r
+    const ta = A[i]; A[i] = A[p]; A[p] = ta; const tb = b[i]; b[i] = b[p]; b[p] = tb
+    const piv = A[i][i] || 1e-9
+    for (let c = i; c < n; c++) A[i][c] /= piv
+    b[i] /= piv
+    for (let r = 0; r < n; r++) { if (r === i) continue; const fac = A[r][i]; for (let c = i; c < n; c++) A[r][c] -= fac*A[i][c]; b[r] -= fac*b[i] }
+  }
+  return b
+}
+function homography(src, dst) {
+  const A = [], b = []
+  for (let i = 0; i < 4; i++) {
+    const [x, y] = src[i], [u, v] = dst[i]
+    A.push([x, y, 1, 0, 0, 0, -u*x, -u*y]); b.push(u)
+    A.push([0, 0, 0, x, y, 1, -v*x, -v*y]); b.push(v)
+  }
+  const hh = solve(A, b); return [hh[0], hh[1], hh[2], hh[3], hh[4], hh[5], hh[6], hh[7], 1]
+}
+function dist(a, b) { return Math.hypot(a[0]-b[0], a[1]-b[1]) }
+function warpQuad(srcCanvas, quad) {
+  const sw = srcCanvas.width, sh = srcCanvas.height
+  const S = srcCanvas.getContext('2d').getImageData(0, 0, sw, sh).data
+  let outW = Math.round((dist(quad[0], quad[1]) + dist(quad[3], quad[2])) / 2)
+  let outH = Math.round((dist(quad[0], quad[3]) + dist(quad[1], quad[2])) / 2)
+  outW = Math.max(200, Math.min(CAP_EDGE, outW)); outH = Math.max(200, Math.min(CAP_EDGE, outH))
+  const H = homography([[0, 0], [outW, 0], [outW, outH], [0, outH]], quad) // dst -> src
+  const out = mkCanvas(outW, outH)
+  const octx = out.getContext('2d'), od = octx.createImageData(outW, outH), D = od.data
+  for (let y = 0; y < outH; y++) for (let x = 0; x < outW; x++) {
+    const wv = H[6]*x + H[7]*y + H[8]
+    let sx = (H[0]*x + H[1]*y + H[2]) / wv, sy = (H[3]*x + H[4]*y + H[5]) / wv
+    sx = sx < 0 ? 0 : sx > sw-1 ? sw-1 : sx
+    sy = sy < 0 ? 0 : sy > sh-1 ? sh-1 : sy
+    const x0 = sx|0, y0 = sy|0, fx = sx-x0, fy = sy-y0
+    const x1 = x0+1 < sw ? x0+1 : x0, y1 = y0+1 < sh ? y0+1 : y0
+    const o = (y*outW + x) * 4
+    for (let c = 0; c < 3; c++) {
+      const p00 = S[(y0*sw+x0)*4+c], p10 = S[(y0*sw+x1)*4+c], p01 = S[(y1*sw+x0)*4+c], p11 = S[(y1*sw+x1)*4+c]
+      D[o+c] = (p00*(1-fx) + p10*fx)*(1-fy) + (p01*(1-fx) + p11*fx)*fy
+    }
+    D[o+3] = 255
+  }
+  octx.putImageData(od, 0, 0)
+  return out
+}
+
+/* --- Auto-Belichtung: Perzentil-Streckung + leichtes Gamma; optional S/W --- */
+function autoExpose(canvas, bw) {
+  const ctx = canvas.getContext('2d')
+  const img = ctx.getImageData(0, 0, canvas.width, canvas.height), d = img.data
+  const hist = new Uint32Array(256)
+  for (let i = 0; i < d.length; i += 4) hist[(d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114) | 0]++
+  const tot = d.length / 4
+  let acc = 0, lo = 0, hi = 255
+  for (let i = 0; i < 256; i++) { acc += hist[i]; if (acc > tot*0.02) { lo = i; break } }
+  acc = 0
+  for (let i = 255; i >= 0; i--) { acc += hist[i]; if (acc > tot*0.02) { hi = i; break } }
+  const span = Math.max(1, hi - lo)
+  for (let i = 0; i < d.length; i += 4) {
+    for (let c = 0; c < 3; c++) {
+      let v = (d[i+c] - lo) / span
+      v = v < 0 ? 0 : v > 1 ? 1 : v
+      d[i+c] = (Math.pow(v, 0.82) * 255) | 0
+    }
+    if (bw) {
+      const gg = d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114
+      const t = gg > 155 ? 255 : gg < 95 ? 0 : ((gg - 95) / 60 * 255)
+      d[i] = d[i+1] = d[i+2] = t | 0
+    }
+  }
+  ctx.putImageData(img, 0, 0)
+}
+
+async function canvasToJpeg(cv, q) {
+  const blob = cv.convertToBlob
+    ? await cv.convertToBlob({ type: 'image/jpeg', quality: q })
+    : await new Promise(r => cv.toBlob(r, 'image/jpeg', q))
+  return { bytes: new Uint8Array(await blob.arrayBuffer()), w: cv.width, h: cv.height }
+}
+
+/** file -> Seiten-Objekt mit Vorschau + geschätzten Ecken (in cap-Koordinaten). */
+async function prepPage(file) {
+  const [cap, an] = await Promise.all([decodeToCanvas(file, CAP_EDGE), decodeToCanvas(file, AN_EDGE)])
+  let quad = null
+  try { quad = detectQuad(an) } catch {}
+  const k = cap.width / an.width
+  quad = quad ? quad.map(p => [p[0]*k, p[1]*k]) : insetQuad(cap.width, cap.height, 0.04)
+  const blob = cap.convertToBlob
+    ? await cap.convertToBlob({ type: 'image/jpeg', quality: 0.6 })
+    : await new Promise(r => cap.toBlob(r, 'image/jpeg', 0.6))
+  return { cap, quad, w: cap.width, h: cap.height, url: URL.createObjectURL(blob) }
+}
+
+/** Seite -> fertiges JPEG (zuschneiden/begradigen + Belichtung). */
+async function renderPage(page, auto, bw) {
+  let cv = page.cap
+  if (auto) cv = warpQuad(page.cap, page.quad)
+  else {
+    cv = mkCanvas(page.cap.width, page.cap.height)
+    cv.getContext('2d').drawImage(page.cap, 0, 0)
+  }
+  autoExpose(cv, bw)
+  return canvasToJpeg(cv, 0.7)
+}
+
+function buildPdf(pages) {
+  // pages: [{ bytes: Uint8Array(jpeg), w, h }]
+  const A4W = 595.28
+  const parts = []
+  let len = 0
+  const push = (chunk) => {
+    const u = typeof chunk === 'string' ? enc.encode(chunk) : chunk
+    parts.push(u); len += u.length
+  }
+  const offsets = []
+  const obj = (n, body) => { offsets[n] = len; push(n + ' 0 obj\n'); push(body); push('\nendobj\n') }
+
+  push('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n')
+  const nPages = pages.length
+  const kids = []
+  // Objekt-Nummern: 1 Catalog, 2 Pages, dann je Seite: page, content, image
+  for (let i = 0; i < nPages; i++) kids.push((3 + i * 3) + ' 0 R')
+
+  obj(1, '<< /Type /Catalog /Pages 2 0 R >>')
+  obj(2, '<< /Type /Pages /Kids [' + kids.join(' ') + '] /Count ' + nPages + ' >>')
+
+  pages.forEach((pg, i) => {
+    const pageNo = 3 + i * 3, contentNo = pageNo + 1, imgNo = pageNo + 2
+    const pw = A4W, ph = Math.round((pg.h / pg.w) * A4W * 100) / 100
+    obj(pageNo,
+      '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + pw + ' ' + ph + ']' +
+      ' /Resources << /XObject << /Im0 ' + imgNo + ' 0 R >> >>' +
+      ' /Contents ' + contentNo + ' 0 R >>')
+    const stream = 'q ' + pw + ' 0 0 ' + ph + ' 0 0 cm /Im0 Do Q'
+    obj(contentNo, '<< /Length ' + stream.length + ' >>\nstream\n' + stream + '\nendstream')
+    // Bild-Objekt mit binärem Stream
+    offsets[imgNo] = len
+    push(imgNo + ' 0 obj\n')
+    push('<< /Type /XObject /Subtype /Image /Width ' + pg.w + ' /Height ' + pg.h +
+         ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + pg.bytes.length + ' >>\nstream\n')
+    push(pg.bytes)
+    push('\nendstream\nendobj\n')
+  })
+
+  const xrefAt = len
+  const total = 3 + nPages * 3
+  push('xref\n0 ' + total + '\n')
+  push('0000000000 65535 f \n')
+  for (let n = 1; n < total; n++) push(String(offsets[n] || 0).padStart(10, '0') + ' 00000 n \n')
+  push('trailer\n<< /Size ' + total + ' /Root 1 0 R >>\nstartxref\n' + xrefAt + '\n%%EOF')
+
+  const out = new Uint8Array(len)
+  let o = 0
+  for (const p of parts) { out.set(p, o); o += p.length }
+  return out
+}
+
+/* ---------- UI: Tabs ---------- */
+const TABS = ['scan', 'learn', 'sign', 'key']
+function switchTab(name) {
+  document.querySelectorAll('.tabbar button').forEach(x => x.classList.toggle('on', x.dataset.tab === name))
+  for (const t of TABS) $('#tab-' + t).classList.toggle('hidden', t !== name)
+  window.scrollTo(0, 0)
+}
+document.querySelectorAll('.tabbar button').forEach(b => b.onclick = () => switchTab(b.dataset.tab))
+
+/* Signieren / Prüfen umschalten */
+document.querySelectorAll('#signseg button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#signseg button').forEach(x => x.classList.toggle('on', x === b))
+  $('#sm-do').classList.toggle('hidden', b.dataset.sm !== 'do')
+  $('#sm-check').classList.toggle('hidden', b.dataset.sm !== 'check')
+})
+$('#signkeylink').onclick = (e) => { e.preventDefault(); switchTab('key') }
+
+/* ---------- UI: Scannen ---------- */
+let scanPages = []   // { cap, quad, w, h, url }
+
+async function addScanFiles(list) {
+  const files = Array.from(list || [])
+  if (!files.length) return
+  $('#scanhint').textContent = 'Seiten werden verarbeitet …'
+  const done = await Promise.all(files.map(f => prepPage(f).catch(e => { console.warn(e); return null })))
+  const ok = done.filter(Boolean)
+  for (const p of ok) scanPages.push(p)
+  renderScanPages()
+  const failed = done.length - ok.length
+  if (failed && !ok.length) {
+    $('#scanhint').textContent = 'Keine Seite konnte gelesen werden.'
+    toast('Bild konnte nicht gelesen werden – anderes Format probieren (JPG, PNG, HEIC).', 'bad')
+  } else if (failed) {
+    $('#scanhint').textContent = ''
+    toast(failed + ' von ' + done.length + ' Bildern nicht lesbar – übersprungen.', 'bad')
+  } else {
+    $('#scanhint').textContent = ''
+  }
+}
+function renderScanPages() {
+  const wrap = $('#scanpages')
+  wrap.innerHTML = ''
+  scanPages.forEach((p, i) => {
+    const fig = document.createElement('figure')
+    fig.innerHTML = '<img src="' + p.url + '" alt=""><figcaption>' + (i+1) + '</figcaption><button class="rm" aria-label="Entfernen">×</button>'
+    fig.querySelector('img').onclick = () => openEditor(i)
+    fig.querySelector('button').onclick = (ev) => {
+      ev.stopPropagation()
+      URL.revokeObjectURL(p.url); scanPages.splice(i, 1); renderScanPages()
+    }
+    wrap.appendChild(fig)
+  })
+  const has = scanPages.length > 0
+  $('#scansave').disabled = !has
+  $('#scanclear').disabled = !has
+  $('#scantip').style.display = has ? '' : 'none'
+  $('#scanhint').textContent = has ? (scanPages.length + ' Seite(n) bereit') : ''
+}
+
+/* --- Ecken-Editor --- */
+let edIdx = -1, edQuad = null, edFit = null
+function edLayout() {
+  const p = scanPages[edIdx], st = $('#edstage').getBoundingClientRect()
+  const scale = Math.min(st.width / p.w, st.height / p.h)
+  const dw = p.w * scale, dh = p.h * scale
+  edFit = { scale, ox: (st.width - dw) / 2, oy: (st.height - dh) / 2, left: st.left, top: st.top }
+  const hs = document.querySelectorAll('#editor .ed-h')
+  const pts = edQuad.map(q => [edFit.ox + q[0]*scale, edFit.oy + q[1]*scale])
+  pts.forEach((pt, i) => { hs[i].style.left = pt[0] + 'px'; hs[i].style.top = pt[1] + 'px' })
+  $('#edpoly').setAttribute('points', pts.map(pt => pt.join(',')).join(' '))
+}
+function openEditor(i) {
+  edIdx = i
+  edQuad = scanPages[i].quad.map(q => q.slice())
+  $('#edimg').src = scanPages[i].url
+  $('#editor').classList.remove('hidden')
+  requestAnimationFrame(edLayout)
+}
+function closeEditor() { $('#editor').classList.add('hidden'); edIdx = -1 }
+document.querySelectorAll('#editor .ed-h').forEach(h => {
+  h.addEventListener('pointerdown', ev => {
+    ev.preventDefault(); h.setPointerCapture(ev.pointerId)
+    const idx = +h.dataset.i, p = scanPages[edIdx]
+    const move = e => {
+      let x = (e.clientX - edFit.left - edFit.ox) / edFit.scale
+      let y = (e.clientY - edFit.top - edFit.oy) / edFit.scale
+      edQuad[idx] = [Math.max(0, Math.min(p.w, x)), Math.max(0, Math.min(p.h, y))]
+      edLayout()
+    }
+    const up = () => { h.removeEventListener('pointermove', move); h.removeEventListener('pointerup', up) }
+    h.addEventListener('pointermove', move); h.addEventListener('pointerup', up)
+  })
+})
+$('#edfull').onclick = () => { const p = scanPages[edIdx]; edQuad = insetQuad(p.w, p.h, 0.01); edLayout() }
+$('#edcancel').onclick = closeEditor
+$('#eddone').onclick = () => { scanPages[edIdx].quad = edQuad; closeEditor() }
+window.addEventListener('resize', () => { if (edIdx >= 0) edLayout() })
+
+$('#scanfile').onchange = (e) => { addScanFiles(e.target.files); e.target.value = '' }
+$('#scanpick').onchange = (e) => { addScanFiles(e.target.files); e.target.value = '' }
+$('#scanclear').onclick = () => { scanPages.forEach(p => URL.revokeObjectURL(p.url)); scanPages = []; renderScanPages() }
+$('#scansave').onclick = async () => {
+  if (!scanPages.length) return
+  const btn = $('#scansave'); btn.disabled = true; btn.textContent = 'Wird erstellt …'
+  const auto = $('#scanauto').checked, bw = $('#scanbw').checked
+  try {
+    const jpegs = await Promise.all(scanPages.map(p => renderPage(p, auto, bw)))
+    const pdf = buildPdf(jpegs)
+    const raw = ($('#scanname').value || 'Notiz').trim().replace(/[/\\:*?"<>|]+/g, '-')
+    const name = raw + ' ' + new Date().toISOString().slice(0, 10) + '.pdf'
+    const file = new File([pdf], name, { type: 'application/pdf' })
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: name }); $('#scanhint').textContent = 'Geteilt – „In Dateien sichern“ → Studium/_Eingang.'; return }
+      catch (e) { const m = shareErr(e); if (!m) return; toast(m, 'bad') }
+    } else {
+      toast('Dieser Browser kann die Datei nicht direkt teilen – sie wird heruntergeladen.', 'bad')
+    }
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(file); a.download = name
+    document.body.appendChild(a); a.click(); a.remove()
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000)
+    $('#scanhint').textContent = 'Heruntergeladen – nach iCloud Drive / Studium / _Eingang verschieben.'
+  } catch (e) {
+    console.error(e)
+    toast('PDF-Erstellung fehlgeschlagen: ' + (e && e.message || e), 'bad')
+  } finally {
+    btn.disabled = false; btn.textContent = 'Als PDF sichern / in iCloud'
+  }
+}
+
+/* ---------- UI: Schlüssel ---------- */
+function paintKey() {
+  $('#keyid').textContent = KEY ? KEY.keyId : '– – – –'
+  $('#keymeta').textContent = KEY ? ('geladen · erstellt am ' + new Date(KEY.created).toLocaleDateString('de-DE')) : 'Noch kein Schlüssel auf diesem Gerät.'
+  $('#sub').textContent = KEY ? ('Schlüssel ' + KEY.keyId) : 'Notizen scannen & PDFs signieren'
+  const w = $('#signkeywarn'); if (w) w.classList.toggle('hidden', !!KEY)
+}
+async function doImport(text) {
+  const pw = $('#keypw').value
+  if (!text.trim() || !pw) return toast('Schlüsseldatei/-text und Passwort nötig.', 'bad')
+  try {
+    const s = await decryptKeyFile(text, pw)
+    localStorage.setItem(LS, JSON.stringify({ created: s.created, privateJwk: s.privateJwk, publicJwk: s.publicJwk }))
+    KEY = await importPair(s)
+    $('#keypw').value = ''; $('#keytext').value = ''
+    paintKey(); toast('Schlüssel übernommen.', 'ok')
+  } catch (e) { toast(e && e.message || 'Import fehlgeschlagen – Passwort prüfen.', 'bad') }
+}
+$('#keyfile').onchange = async (e) => { const f = e.target.files[0]; if (f) $('#keytext').value = await f.text() }
+$('#keyimport').onclick = () => doImport($('#keytext').value)
+$('#keyclear').onclick = () => { if (confirm('Schlüssel von diesem Gerät entfernen?')) { localStorage.removeItem(LS); KEY = null; paintKey() } }
+
+/* ---------- UI: Signieren ---------- */
+let signedBlob = null, signedName = ''
+$('#signfile').onchange = async (e) => {
+  const f = e.target.files[0]; if (!f) return
+  if (!KEY) return toast('Erst einen Schlüssel importieren (Tab „Schlüssel“).', 'bad')
+  try {
+    const out = await appendSignature(new Uint8Array(await f.arrayBuffer()))
+    signedName = f.name.replace(/\.pdf$/i,'') + '-signiert.pdf'
+    signedBlob = new Blob([out], { type: 'application/pdf' })
+    $('#signname').textContent = signedName
+    $('#signout').classList.remove('hidden')
+    $('#signhint').textContent = 'Signiert mit Kennung ' + KEY.keyId
+  } catch (err) { console.error(err); toast(err && err.message || 'Signieren fehlgeschlagen.', 'bad') }
+}
+$('#signsave').onclick = async () => {
+  if (!signedBlob) return
+  const file = new File([signedBlob], signedName, { type: 'application/pdf' })
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: signedName }); return }
+    catch (e) { const m = shareErr(e); if (!m) return; toast(m, 'bad') }
+  } else {
+    toast('Dieser Browser kann die Datei nicht direkt teilen – sie wird heruntergeladen.', 'bad')
+  }
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(signedBlob); a.download = signedName
+  document.body.appendChild(a); a.click(); a.remove()
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000)
+}
+
+/* ---------- UI: Prüfen ---------- */
+const STAT = {
+  ok:      { cls:'ok',       icon:'✓', title:'Von deinem Schlüssel signiert' },
+  foreign: { cls:'foreign',  icon:'≠', title:'Gültig signiert – anderer Schlüssel' },
+  modified:{ cls:'modified', icon:'!', title:'Dokument nach dem Signieren verändert' },
+  invalid: { cls:'invalid',  icon:'✕', title:'Signatur ungültig' },
+  none:    { cls:'',         icon:'–', title:'Keine Astra-Signatur gefunden' },
+}
+$('#verifyfile').onchange = async (e) => {
+  const f = e.target.files[0]; if (!f) return
+  $('#verifyout').innerHTML = '<p class="hint">Wird geprüft …</p>'
+  const r = await verifySignature(new Uint8Array(await f.arrayBuffer()))
+  const s = STAT[r.status]
+  let html = `<div class="result ${s.cls}"><div class="head"><span class="dot">${s.icon}</span>${s.title}</div>`
+  if (r.status !== 'none') {
+    html += '<dl>'
+    if (r.keyId) html += `<dt>Kennung</dt><dd>${r.keyId}${r.isMine ? '<span class="badge">dein Schlüssel</span>' : ''}</dd>`
+    if (r.created) html += `<dt>Signiert</dt><dd>${new Date(r.created).toLocaleString('de-DE')}</dd>`
+    if (r.note) html += `<dt>Notiz</dt><dd>${r.note}</dd>`
+    html += '</dl>'
+  }
+  html += '</div>'
+  $('#verifyout').innerHTML = html
+}
+
+/* ---------- UI: Lernen ---------- */
+let PACK = null, PACKNAME = 'lernplan.json', qi = 0, qPicked = null
+
+function lsKey(p) { return 'astralearn:' + (p.examKey || p.examTitle || 'pack') }
+function loadLocalProgress(p) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(lsKey(p)) || 'null')
+    if (!saved) return p
+    // neuere Einträge je Frage gewinnen
+    const prog = { ...(p.progress || {}) }
+    for (const [id, v] of Object.entries(saved.progress || {})) {
+      if (!prog[id] || new Date(v.updated) >= new Date(prog[id].updated)) prog[id] = v
+    }
+    p.progress = prog
+    if (saved.updated && new Date(saved.updated) > new Date(p.updated || 0)) p.updated = saved.updated
+  } catch {}
+  return p
+}
+function saveLocalProgress(p) {
+  try { localStorage.setItem(lsKey(p), JSON.stringify({ progress: p.progress, updated: new Date().toISOString() })) } catch {}
+}
+
+let curQuiz = 0, weakMode = false
+function quizzesOf(p) {
+  if (Array.isArray(p.quizzes)) return p.quizzes
+  return Array.isArray(p.quiz) && p.quiz.length ? [{ id: 'q1', name: 'Quiz 1', items: p.quiz }] : []
+}
+function analyzeLite(p) {
+  const items = quizzesOf(p).flatMap(q => q.items)
+  const prog = p.progress || {}
+  const topics = {}, weakIds = []
+  for (const it of items) {
+    const t = (it.topic || 'Allgemein').trim() || 'Allgemein'
+    topics[t] = topics[t] || { seen: 0, correct: 0 }
+    const pr = prog[it.id]
+    if (pr) {
+      const ok = pr.correct > 0 && pr.lastCorrect
+      topics[t].seen++; if (ok) topics[t].correct++
+      const acc = pr.seen > 0 ? pr.correct / pr.seen : 0
+      if (!pr.lastCorrect || acc < 0.5) weakIds.push(it.id)
+    }
+  }
+  const byTopic = Object.entries(topics).filter(([, v]) => v.seen > 0).map(([topic, v]) => {
+    const acc = v.correct / v.seen
+    const mastery = Math.min(1, (v.seen / 3) * acc + acc * 0.34)
+    return { topic, mastery, weak: v.seen >= 2 && mastery < 0.6 }
+  }).sort((a, b) => a.mastery - b.mastery)
+  return { byTopic, weakIds }
+}
+function renderLearn() {
+  const p = PACK
+  $('#learnout').classList.toggle('hidden', !p)
+  if (!p) return
+  $('#learnhead').textContent = p.examTitle + (p.kurs ? ' · ' + p.kurs : '')
+  const qz = quizzesOf(p)
+  const total = qz.reduce((s, q) => s + q.items.length, 0)
+  const ans = Object.keys(p.progress || {}).length
+  const sure = Object.values(p.progress || {}).filter(x => x.correct > 0).length
+  $('#learnstats').textContent = qz.length + ' Quiz · ' + total + ' Fragen · ' + ans + ' beantwortet · ' + sure + ' sicher'
+  $('#lt-summary').textContent = p.summary || '(noch keine Zusammenfassung – am Mac erstellen)'
+  const mat = (p.resources || []).map(r => '• ' + (r.title || r.url) + '  ' + r.url).join('\n')
+  $('#lt-plan').textContent = (p.plan || '(noch kein Lernplan – am Mac erstellen)') +
+    (mat ? '\n\n— Material —\n' + mat : '')
+  renderQuiz()
+}
+function perfBarsHtml(p) {
+  const a = analyzeLite(p)
+  if (!a.byTopic.length) return ''
+  return '<div class="perf">' + a.byTopic.map(t =>
+    '<div class="perfrow"><span>' + esc(t.topic) + '</span><span class="bar' + (t.weak ? ' weak' : '') +
+    '"><i style="width:' + Math.round(t.mastery * 100) + '%"></i></span><span class="perfval">' +
+    Math.round(t.mastery * 100) + '%</span></div>').join('') + '</div>'
+}
+function renderQuiz() {
+  const p = PACK, box = $('#lt-quiz')
+  const qz = quizzesOf(p)
+  if (!qz.length) { box.innerHTML = '<p class="hint">Noch kein Quiz. Am Mac in Astra erstellen.</p>'; return }
+  if (curQuiz >= qz.length) curQuiz = 0
+  const lite = analyzeLite(p)
+  const bars = perfBarsHtml(p)
+  const chips = qz.map((q, i) =>
+    '<button data-q="' + i + '"' + (!weakMode && i === curQuiz ? ' class="on"' : '') + '>' + esc(q.name || ('Quiz ' + (i+1))) + '</button>').join('')
+  const weakChip = lite.weakIds.length
+    ? '<button data-weak="1"' + (weakMode ? ' class="on"' : '') + '>Wackelig (' + lite.weakIds.length + ')</button>'
+    : ''
+  const picker = (qz.length > 1 || weakChip)
+    ? '<div class="seg" style="margin-bottom:12px">' + chips + weakChip + '</div>'
+    : ''
+  const items = weakMode
+    ? qz.flatMap(q => q.items).filter(it => lite.weakIds.includes(it.id))
+    : (qz[curQuiz].items || [])
+  if (!items.length) { box.innerHTML = bars + picker + '<p class="hint">Keine Fragen.</p>'; wireQuizPicker(box); return }
+  if (qi >= items.length) qi = 0
+  const q = items[qi]
+  const opts = q.choices.map((c, idx) => {
+    let cls = 'opt'
+    if (qPicked !== null && idx === q.answer) cls += ' ok'
+    if (qPicked === idx && idx !== q.answer) cls += ' no'
+    return '<button class="' + cls + '" data-i="' + idx + '">' + String.fromCharCode(65+idx) + '  ' + esc(c) + '</button>'
+  }).join('')
+  box.innerHTML = bars + picker +
+    '<div class="lq"><p>' + (qi+1) + '. ' + esc(q.question) + '</p>' + opts +
+    (qPicked !== null ? '<div class="expl"><b>' + (qPicked === q.answer ? 'Richtig.' : 'Nicht ganz.') + '</b> ' + esc(q.explanation || '') + '</div>' : '') +
+    '</div><div class="lqnav"><button id="lqprev">Zurück</button><button id="lqnext">' + (qi < items.length-1 ? 'Weiter' : 'Von vorn') + '</button></div>'
+  wireQuizPicker(box)
+  box.querySelectorAll('.lq button[data-i]').forEach(b => b.onclick = () => {
+    if (qPicked !== null) return
+    qPicked = +b.dataset.i
+    const q2 = items[qi], correct = qPicked === q2.answer
+    const prev = p.progress[q2.id] || { seen: 0, correct: 0 }
+    p.progress[q2.id] = { seen: prev.seen + 1, correct: prev.correct + (correct ? 1 : 0), lastCorrect: correct, updated: new Date().toISOString() }
+    saveLocalProgress(p)
+    renderLearn()
+  })
+  $('#lqprev').onclick = () => { if (qi > 0) { qi--; qPicked = null; renderQuiz() } }
+  $('#lqnext').onclick = () => { qi = (qi + 1) % items.length; qPicked = null; renderQuiz() }
+}
+function wireQuizPicker(box) {
+  box.querySelectorAll('.seg button[data-q]').forEach(b => b.onclick = () => {
+    weakMode = false; curQuiz = +b.dataset.q; qi = 0; qPicked = null; renderQuiz()
+  })
+  box.querySelectorAll('.seg button[data-weak]').forEach(b => b.onclick = () => {
+    weakMode = true; qi = 0; qPicked = null; renderQuiz()
+  })
+}
+function esc(s) { return String(s).replace(/[&<>]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;' }[c])) }
+
+$('#learnfile').onchange = async (e) => {
+  const f = e.target.files[0]; if (!f) return
+  try {
+    const p = JSON.parse(await f.text())
+    if (!p || (!Array.isArray(p.quizzes) && !Array.isArray(p.quiz))) throw new Error('kein Lernpaket')
+    PACKNAME = f.name || 'lernplan.json'
+    PACK = loadLocalProgress(p)
+    qi = 0; qPicked = null; curQuiz = 0; weakMode = false
+    renderLearn()
+  } catch (err) { toast('Kein gültiger Lernplan: ' + (err && err.message || err), 'bad') }
+}
+document.querySelectorAll('#learntabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#learntabs button').forEach(x => x.classList.toggle('on', x === b))
+  for (const t of ['quiz','summary','plan']) {
+    const el = $('#lt-' + t); if (el) el.classList.toggle('hidden', t !== b.dataset.lt)
+  }
+})
+$('#learnsave').onclick = async () => {
+  if (!PACK) return
+  PACK.updated = new Date().toISOString()
+  saveLocalProgress(PACK)
+  const blob = new Blob([JSON.stringify(PACK, null, 2)], { type: 'application/json' })
+  const file = new File([blob], PACKNAME, { type: 'application/json' })
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: PACKNAME }); $('#learnsavehint').textContent = 'Geteilt – über der alten Datei in Prüfungsvorbereitung sichern.'; return }
+    catch (e) { if (e.name === 'AbortError') return }
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = PACKNAME
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000)
+  $('#learnsavehint').textContent = 'Heruntergeladen – zurück in den Prüfungsvorbereitung-Ordner legen.'
+}
+
+loadStoredKey().then(k => { KEY = k; paintKey() })
+
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {})
+}
+window.addEventListener('online', () => $('#offline').textContent = '')
+window.addEventListener('offline', () => $('#offline').textContent = '(gerade offline – funktioniert trotzdem)')
+</script>
+</body>
+</html>
