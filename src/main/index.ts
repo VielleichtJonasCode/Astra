@@ -11,6 +11,7 @@ import { registerOcrHelper } from './ocr-helper'
 import { registerCalendar } from './calendar'
 import { registerLlm } from './llm'
 import { registerTray } from './tray'
+import { registerWidgetBridge } from './widgetBridge'
 import { restoreWindowState, trackWindowState } from './windowState'
 
 registerOcrProtocolScheme()
@@ -75,6 +76,9 @@ function createWindow(): void {
   trackWindowState(mainWindow)
 
   mainWindow.once('ready-to-show', () => {
+    if (process.env['PDFSTUDIO_PERF']) {
+      console.log(`[perf] ready-to-show nach ${Math.round(process.uptime() * 1000)} ms`)
+    }
     mainWindow?.show()
     flushPendingOpenFiles()
     maybeCaptureAndQuit()
@@ -166,6 +170,13 @@ function createWindow(): void {
     devParams.set('spdemo', '1')
   }
   if (process.env['PDFSTUDIO_SP_SHEET']) devParams.set('spsheet', process.env['PDFSTUDIO_SP_SHEET'])
+  if (process.env['PDFSTUDIO_SP_PAGE']) devParams.set('sppage', process.env['PDFSTUDIO_SP_PAGE'])
+  if (process.env['PDFSTUDIO_SP_HASH']) {
+    for (const kv of process.env['PDFSTUDIO_SP_HASH'].split('&')) {
+      const [k, ...v] = kv.split('=')
+      if (k) devParams.set(k, v.join('='))
+    }
+  }
   if (process.env['PDFSTUDIO_SP_TEST']) {
     devParams.set('view', 'studienplaner')
     devParams.set('sptest', '1')
@@ -216,6 +227,7 @@ if (!app.requestSingleInstanceLock()) {
     registerOcrHelper()
     registerCalendar()
     registerLlm()
+    registerWidgetBridge()
     registerAssets()
     registerHtmlToPdf()
     registerStudienplaner(getMainWindow)

@@ -70,9 +70,12 @@
   position: relative;
   z-index: 1;
 }
+.sp__body--hidden {
+  display: none;
+}
 
 .sp__side {
-  width: 244px;
+  width: var(--sp-side-w, 244px);
   flex-shrink: 0;
   border-right: 1px solid var(--border-inset);
   display: flex;
@@ -308,6 +311,46 @@
 }
 .sp__nextexam.is-soon .sp__nextexamdays {
   color: var(--warning, #d98324);
+}
+
+/* — „Überfällig – später einplanen?" Hinweis — */
+.sp__overdue {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 var(--sp-3);
+  padding: 9px 12px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-inset);
+  border-left: 3px solid var(--warning, #d98324);
+  background: color-mix(in srgb, var(--warning, #d98324) 8%, var(--bg-content));
+  font-size: var(--fs-12);
+}
+.sp__overdueicon {
+  font-size: 16px;
+  line-height: 1;
+}
+.sp__overduetxt {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.sp__overduetxt strong {
+  color: var(--text-primary);
+  font-size: var(--fs-13);
+}
+.sp__overduetxt span {
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp__overduebtns {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 /* — Lernplan-Kopf beim Kurs — */
@@ -616,9 +659,103 @@
   color: var(--text-tertiary);
 }
 
+/* KI-/Heuristik-Sicherheit beim Einsortieren */
+.sp-file__ai {
+  border: 1px solid var(--border-inset);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  margin-bottom: var(--sp-4);
+  background: var(--bg-content);
+}
+.sp-file__ailabel {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: var(--fs-11);
+  font-weight: var(--fw-semibold);
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+.sp-file__ailabel em {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--text-tertiary);
+}
+.sp-file__aicand {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  grid-template-areas: 'bar kurs pct' 'bar sem pct' 'words words words';
+  align-items: center;
+  gap: 2px 10px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+.sp-file__aicand:hover {
+  background: var(--bg-hover);
+}
+.sp-file__aicand.is-active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.sp-file__aibar {
+  grid-area: bar;
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-hover);
+  overflow: hidden;
+}
+.sp-file__aibar i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+}
+.sp-file__aibar i.is-hi {
+  background: #1a7f4b;
+}
+.sp-file__aibar i.is-mid {
+  background: var(--warning, #d98324);
+}
+.sp-file__aibar i.is-lo {
+  background: var(--border-strong);
+}
+.sp-file__aikurs {
+  grid-area: kurs;
+  font-size: var(--fs-13);
+  font-weight: var(--fw-medium);
+  color: var(--text-primary);
+}
+.sp-file__aisem {
+  grid-area: sem;
+  font-size: var(--fs-11);
+  color: var(--text-tertiary);
+}
+.sp-file__aipct {
+  grid-area: pct;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--fw-semibold);
+  color: var(--text-secondary);
+}
+.sp-file__aiwords {
+  grid-area: words;
+  margin-top: 2px;
+  font-size: var(--fs-10);
+  color: var(--text-tertiary);
+}
+.sp-file__aimeta {
+  margin: 8px 0 0;
+  font-size: var(--fs-10);
+  color: var(--text-tertiary);
+}
+
 /* — Kalender-Leiste — */
 .sp__cal {
-  width: 320px;
+  width: var(--sp-cal-w, 320px);
   flex-shrink: 0;
   border-left: 1px solid var(--border-inset);
   display: flex;
@@ -741,36 +878,95 @@
   color: var(--text-tertiary);
 }
 
+.sp__pastexambtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  margin: 6px 0 4px;
+  padding: 4px 2px;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: var(--fs-11);
+  cursor: pointer;
+}
+.sp__pastexambtn:hover {
+  color: var(--text-secondary);
+}
+.sp__exam--past {
+  opacity: 0.72;
+}
+.sp__exam--past .sp__examleft {
+  font-weight: 600;
+}
+
+.sp__undohead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-semibold);
+  padding: 2px 0;
+  cursor: pointer;
+}
+.sp__undohead:hover {
+  color: var(--text-primary);
+}
+.sp__undopanel .sp__undolist {
+  margin-top: 8px;
+}
+
 .sp__aday {
-  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  gap: 8px;
+  padding: 7px 0;
+  border-top: 1px solid var(--border-inset);
+}
+.sp__aday:first-of-type {
+  border-top: 0;
 }
 .sp__adaylabel {
   font-size: var(--fs-11);
   font-weight: var(--fw-semibold);
   color: var(--text-secondary);
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--border-inset);
-  margin-bottom: 4px;
+  padding-top: 1px;
+}
+.sp__adayevents {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.sp__aevnone {
+  font-size: var(--fs-11);
+  color: var(--text-tertiary);
 }
 .sp__aev {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 2px;
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 12px;
   font-size: var(--fs-12);
+  align-items: baseline;
 }
 .sp__aevdot {
-  width: 8px;
-  height: 8px;
+  display: inline-block;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  flex-shrink: 0;
+  margin-right: 6px;
+  vertical-align: 1px;
 }
 .sp__aevtime {
-  flex-shrink: 0;
-  width: 74px;
   color: var(--text-tertiary);
   font-variant-numeric: tabular-nums;
   font-size: var(--fs-11);
+  white-space: nowrap;
 }
 .sp__aevtitle {
   overflow: hidden;
@@ -780,6 +976,22 @@
 .sp__aev.is-exam .sp__aevtitle {
   color: var(--danger);
   font-weight: var(--fw-medium);
+}
+
+/* — Notizen-Gruppen im Kurs (Informationen / Übungen) — */
+.sp__notesgroup {
+  margin-bottom: var(--sp-3);
+}
+.sp__notesgrouphead {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--fs-11);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 6px;
 }
 
 .sp__calpickwrap {
@@ -933,4 +1145,221 @@
 }
 .sp__ttrow input {
   accent-color: var(--accent);
+}
+.sp__ttactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+.sp__ttrow--file {
+  cursor: default;
+}
+.sp__ttname {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp__ttects {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fs-11);
+  color: var(--text-tertiary);
+}
+.sp__ttects input {
+  width: 52px;
+  padding: 3px 5px;
+  border-radius: var(--r-sm, 6px);
+  border: 1px solid var(--border-inset);
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  font-size: var(--fs-12);
+}
+.sp__ttexam {
+  font-size: var(--fs-11);
+  color: var(--text-tertiary);
+}
+.sp__ttdrop {
+  border: 0;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.sp__ttdrop:hover {
+  color: var(--danger);
+}
+
+/* — Aufgaben-Sektion auf der zentralen Lernplan-Seite — */
+.sp__tasksec {
+  margin: 4px 0 var(--sp-4);
+}
+.sp__tasksechead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.sp__tasksechead h3,
+.sp__facheshead {
+  margin: 0;
+  font-size: var(--fs-11);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.sp__facheshead {
+  margin: var(--sp-4) 0 6px;
+}
+.sp__taskadd {
+  margin-bottom: 10px;
+}
+.cpi__rowbtns {
+  display: flex;
+  gap: 6px;
+}
+
+/* — verschiebbare Seitenleisten — */
+.sp__resize {
+  flex: 0 0 6px;
+  margin: 0 -3px;
+  z-index: 4;
+  cursor: col-resize;
+  position: relative;
+}
+.sp__resize::after {
+  content: '';
+  position: absolute;
+  inset: 0 2px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background 0.12s;
+}
+.sp__resize:hover::after,
+.sp__resize.is-dragging::after {
+  background: var(--accent);
+}
+body.sp-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.sp-file__dup {
+  margin: 0;
+  font-size: var(--fs-12);
+  color: var(--warning);
+  line-height: 1.45;
+}
+
+.sp-file__append {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--border-inset);
+  border-radius: var(--r-md);
+  padding: 8px 10px;
+}
+.sp-file__append.is-on {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-inset));
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.sp-file__appendhead {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: var(--fs-13);
+  color: var(--text-primary);
+}
+.sp-file__appendhead > span {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.sp-file__appendhead em {
+  font-style: normal;
+  font-size: var(--fs-11);
+  color: var(--text-tertiary);
+  line-height: 1.4;
+}
+
+.sp__inboxhint {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--fs-11);
+  font-style: normal;
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp__inboxwarn {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--fs-11);
+  font-style: normal;
+  color: var(--warning, #d98324);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp__conf {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 5px;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--fw-semibold);
+}
+.sp__conf.is-hi {
+  color: #1a7f4b;
+  background: color-mix(in srgb, #1a7f4b 16%, transparent);
+}
+.sp__conf.is-mid {
+  color: var(--warning, #d98324);
+  background: color-mix(in srgb, #d98324 16%, transparent);
+}
+.sp__conf.is-lo {
+  color: var(--text-tertiary);
+  background: var(--bg-hover);
+}
+.sp__confalt {
+  margin-left: 6px;
+  color: var(--text-tertiary);
+}
+
+.sp__undolist {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+.sp__undoitem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: var(--r-sm, 6px);
+  background: var(--bg-content);
+  font-size: var(--fs-12);
+}
+.sp__undotxt {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+.sp__undotxt strong {
+  color: var(--text-primary);
+}
+.sp__undotxt em {
+  font-style: normal;
+  color: var(--text-tertiary);
 }

@@ -39,7 +39,8 @@ const VERANSTALTUNGS_WORDS =
 export function courseNamesFromEvents(events: CalEvent[]): string[] {
   const byKey = new Map<string, string>()
   for (const e of events) {
-    if (e.allDay || isExam(e.title, e.notes)) continue
+    // Von Astra angelegte Lernblöcke (📚 …) sind keine Vorlesungen.
+    if (e.allDay || isExam(e.title, e.notes) || e.title.startsWith('📚')) continue
     let name = e.title
       .replace(/\s*[–—:|/(-].*$/u, '') // alles ab erstem Trenner (– — : | / ( -) abschneiden
       .replace(VERANSTALTUNGS_WORDS, '')
@@ -58,6 +59,20 @@ export function suggestSemesterName(now: Date = new Date()): string {
   const y = now.getFullYear()
   if (m >= 3 && m <= 8) return `SS ${y}` // April–September
   return `WS ${m >= 9 ? y : y - 1}` // Oktober–März
+}
+
+/**
+ * Chronologischer Sortierschlüssel für Semesternamen. Deutsches Studienjahr:
+ * „SS YYYY" (ab April) liegt vor „WS YYYY" (ab Oktober), das wiederum vor
+ * „SS YYYY+1" liegt. „3. Semester" → 3. Unbekanntes → sehr groß (ans Ende).
+ */
+export function semesterSortKey(name: string): number {
+  const term = /\b(WS|WiSe?|SoSe?|SS)\b/i.exec(name)?.[1]?.toUpperCase()
+  const year = /\b(19|20)\d{2}\b/.exec(name)?.[0]
+  if (term && year) return Number(year) + (/^W/.test(term) ? 0.5 : 0)
+  const ord = /(\d{1,2})\.\s*sem/i.exec(name)?.[1]
+  if (ord) return Number(ord)
+  return 9e6
 }
 
 function startOfDay(d: Date): Date {
@@ -85,13 +100,50 @@ export function daysLeftLabel(n: number): string {
 }
 
 const WD = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
+const WD_SHORT = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
+const MON_SHORT = [
+  'Jan',
+  'Feb',
+  'März',
+  'Apr',
+  'Mai',
+  'Juni',
+  'Juli',
+  'Aug',
+  'Sep',
+  'Okt',
+  'Nov',
+  'Dez'
+]
 
 export function dayLabel(d: Date, now: Date = new Date()): string {
   const n = daysUntil(d.toISOString(), now)
   if (n === 0) return 'Heute'
   if (n === 1) return 'Morgen'
-  const date = `${d.getDate()}.${d.getMonth() + 1}.`
-  return `${WD[d.getDay()]}, ${date}`
+  if (n >= 2 && n <= 6) return `${WD[d.getDay()]}`
+  return `${WD_SHORT[d.getDay()]}, ${d.getDate()}. ${MON_SHORT[d.getMonth()]}`
+}
+
+/** Kompakter „so viel ist verplant"-Text je Tag – Kontext für Gemini. */
+export function busyDigest(events: CalEvent[], untilIso: string | null): string {
+  const now = Date.now()
+  const end = untilIso ? new Date(untilIso).getTime() : now + 21 * 864e5
+  const perDay = new Map<string, number>()
+  for (const e of events) {
+    // Eigene Lernblöcke (📚) sind kein „schon verplant" – die sollen ja neu gelegt werden.
+    if (e.title.startsWith('📚')) continue
+    const t = new Date(e.start).getTime()
+    if (t < now - 864e5 || t > end) continue
+    const hrs = e.allDay
+      ? 8
+      : Math.max(0.5, (new Date(e.end).getTime() - new Date(e.start).getTime()) / 36e5)
+    const day = e.start.slice(0, 10)
+    perDay.set(day, (perDay.get(day) ?? 0) + hrs)
+  }
+  return [...perDay.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([d, h]) => `${d}: ~${Math.round(h)} h verplant`)
+    .join('\n')
 }
 
 export function eventTime(ev: CalEvent): string {
@@ -128,11 +180,73 @@ export function buildAgenda(events: CalEvent[], days: number, now: Date = new Da
   return [...byDay.values()].sort((a, b) => a.key.localeCompare(b.key))
 }
 
+/* ── Monatsraster für die Kalender-Seite ───────────────────────────────── */
+
+export interface MonthCell {
+  /** YYYY-MM-DD. */
+  key: string
+  /** Tag im Monat (1…31). */
+  day: number
+  /** Gehört der Tag zum angezeigten Monat (oder ist Vor-/Nachlauf)? */
+  inMonth: boolean
+  isToday: boolean
+  isWeekend: boolean
+}
+
+/**
+ * 6×7-Raster (montagsbeginnend) für `year`/`month` (0-basiert), inklusive
+ * Vor-/Nachlauftage der Nachbarmonate. Rein – für die Kalender-Seite.
+ */
+export function monthMatrix(year: number, month: number, now: Date = new Date()): MonthCell[][] {
+  const first = new Date(year, month, 1)
+  const startOffset = (first.getDay() + 6) % 7 // Mo=0 … So=6
+  const start = new Date(year, month, 1 - startOffset)
+  const today = dayKey(now)
+  const weeks: MonthCell[][] = []
+  for (let w = 0; w < 6; w++) {
+    const row: MonthCell[] = []
+    for (let d = 0; d < 7; d++) {
+      const cur = new Date(start.getFullYear(), start.getMonth(), start.getDate() + w * 7 + d)
+      const k = dayKey(cur)
+      row.push({
+        key: k,
+        day: cur.getDate(),
+        inMonth: cur.getMonth() === month && cur.getFullYear() === year,
+        isToday: k === today,
+        isWeekend: d >= 5
+      })
+    }
+    weeks.push(row)
+  }
+  return weeks
+}
+
+/** Termine nach Tag (YYYY-MM-DD) gebündelt, je Tag nach Startzeit sortiert. */
+export function eventsByDay(events: CalEvent[]): Map<string, CalEvent[]> {
+  const map = new Map<string, CalEvent[]>()
+  for (const ev of events) {
+    const k = ev.start.slice(0, 10)
+    if (!map.has(k)) map.set(k, [])
+    map.get(k)!.push(ev)
+  }
+  for (const list of map.values()) list.sort((a, b) => a.start.localeCompare(b.start))
+  return map
+}
+
 /** Kommende Klausuren/Tests/Präsentationen, frühestes zuerst. */
 export function upcomingExams(events: CalEvent[], max = 8, now: Date = new Date()): CalEvent[] {
   const todayStart = startOfDay(now).getTime()
   return events
     .filter((ev) => isExam(ev.title, ev.notes) && new Date(ev.end).getTime() >= todayStart)
     .sort((a, b) => a.start.localeCompare(b.start))
+    .slice(0, max)
+}
+
+/** Bereits vergangene Klausuren/Tests/Präsentationen, jüngste zuerst. */
+export function pastExams(events: CalEvent[], max = 20, now: Date = new Date()): CalEvent[] {
+  const todayStart = startOfDay(now).getTime()
+  return events
+    .filter((ev) => isExam(ev.title, ev.notes) && new Date(ev.end).getTime() < todayStart)
+    .sort((a, b) => b.start.localeCompare(a.start))
     .slice(0, max)
 }

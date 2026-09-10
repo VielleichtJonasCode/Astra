@@ -294,55 +294,7 @@
   line-height: 1.5;
 }
 
-/* Markdown */
-.prep__md {
-  font-size: var(--fs-13);
-  line-height: 1.6;
-  color: var(--text-primary);
-}
-.prep__md h1,
-.prep__md h2,
-.prep__md h3 {
-  font-size: var(--fs-13);
-  font-weight: var(--fw-semibold);
-  margin: 1.1em 0 0.4em;
-}
-.prep__md h1 {
-  font-size: var(--fs-16);
-}
-.prep__md ul,
-.prep__md ol {
-  padding-left: 1.3em;
-  margin: 0.4em 0;
-}
-.prep__md li {
-  margin: 0.2em 0;
-}
-.prep__md code {
-  font-family: var(--font-mono);
-  font-size: 0.9em;
-  background: var(--bg-hover);
-  padding: 1px 5px;
-  border-radius: 4px;
-}
-.prep__md pre {
-  background: var(--bg-hover);
-  padding: 10px;
-  border-radius: var(--r-md);
-  overflow-x: auto;
-}
-.prep__md table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 0.6em 0;
-  font-size: var(--fs-12);
-}
-.prep__md th,
-.prep__md td {
-  border: 1px solid var(--border-inset);
-  padding: 5px 8px;
-  text-align: left;
-}
+/* Markdown-Grundstil kommt aus common/markdown.css (.md) */
 
 /* Chat */
 .prep__chat {
@@ -350,6 +302,33 @@
   flex-direction: column;
   gap: 8px;
   min-height: 100%;
+}
+.prep__chattop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-inset);
+  margin-bottom: 2px;
+}
+.prep__chatclear {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--fs-11);
+  cursor: pointer;
+}
+.prep__chatclear:hover:not(:disabled) {
+  color: var(--danger, #d9534f);
+  border-color: currentColor;
+}
+.prep__chatclear:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 .prep__msg {
   max-width: 78%;
@@ -366,8 +345,44 @@
 }
 .prep__msg.is-model {
   align-self: flex-start;
+  max-width: 92%;
+  white-space: normal;
   background: var(--bg-elevated);
   border: 1px solid var(--border-inset);
+}
+.prep__msg--err {
+  border-color: var(--danger, #d9534f);
+  color: var(--text-secondary);
+}
+.prep__msg--err .prep__deeper {
+  display: block;
+  margin-top: 8px;
+}
+/* Markdown in einer Chat-Blase: keine Ränder oben/unten, kompaktere Abstände. */
+.prep__msgmd :first-child {
+  margin-top: 0;
+}
+.prep__msgmd :last-child {
+  margin-bottom: 0;
+}
+.prep__followups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+.prep__deeper {
+  padding: 3px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--fs-11);
+  cursor: pointer;
+}
+.prep__deeper:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
 }
 .prep__askbar {
   position: sticky;
@@ -609,4 +624,109 @@
 }
 .prep__plandetails[open] {
   padding-bottom: 12px;
+}
+
+.prep__perfsub {
+  margin: -2px 0 4px;
+  font-size: var(--fs-11);
+  color: var(--text-tertiary);
+}
+
+/* ── Lernplan-Entwurf (erst nach „Übernehmen" aktiv) ─────────────────── */
+.prep__draft {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.prep__draftbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 9px 11px;
+  border: 1px solid var(--accent);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+}
+.prep__drafttag {
+  font-size: var(--fs-12);
+  font-weight: var(--fw-semibold);
+  color: var(--accent);
+}
+.prep__draftbtns,
+.prep__draftrbtns {
+  display: flex;
+  gap: 8px;
+}
+.prep__draftrevise {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.prep__draftrevise textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 52px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 8px 11px;
+  font: inherit;
+  color: var(--text-primary);
+  outline: none;
+}
+.prep__draftrevise textarea:focus {
+  border-color: var(--accent);
+}
+.prep__draftlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border-inset);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.prep__draftlist li {
+  display: grid;
+  grid-template-columns: 84px 46px 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 11px;
+  font-size: var(--fs-12);
+  border-top: 1px solid var(--border-inset);
+}
+.prep__draftlist li:first-child {
+  border-top: none;
+}
+.prep__draftday {
+  color: var(--text-secondary);
+  font-weight: var(--fw-semibold);
+}
+.prep__drafttime {
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+.prep__drafttitle {
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.prep__draftmeta {
+  color: var(--text-tertiary);
+  font-size: var(--fs-11);
+  white-space: nowrap;
+}
+.prep__draftdel {
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: var(--fs-13);
+  line-height: 1;
+  padding: 2px 4px;
+}
+.prep__draftdel:hover {
+  color: var(--danger, #d9534f);
 }

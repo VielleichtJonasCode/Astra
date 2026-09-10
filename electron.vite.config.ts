@@ -6,6 +6,7 @@ export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin()],
     build: {
+      emptyOutDir: true,
       rollupOptions: {
         input: { index: resolve(__dirname, 'src/main/index.ts') }
       }
@@ -14,6 +15,7 @@ export default defineConfig({
   preload: {
     plugins: [externalizeDepsPlugin()],
     build: {
+      emptyOutDir: true,
       rollupOptions: {
         input: { index: resolve(__dirname, 'src/preload/index.ts') }
       }
@@ -38,6 +40,10 @@ export default defineConfig({
     },
     build: {
       target: 'chrome128',
+      // out/renderer liegt außerhalb von root – Vite leert es sonst NICHT und
+      // alte gehashte Chunks + kopierte Assets sammeln sich über Builds an
+      // (aufgeblähtes app.asar → langsamer Start).
+      emptyOutDir: true,
       rollupOptions: {
         input: { index: resolve(__dirname, 'src/renderer/index.html') }
       }

@@ -92,18 +92,60 @@ export function registerCalendar(): void {
       _e,
       calendarId: string,
       events: { title: string; start: string; end: string; notes?: string }[]
-    ): Promise<{ count: number } | { error: string }> => {
+    ): Promise<{ count: number; ids: string[] } | { error: string }> => {
       if (!isAvailable()) return { error: 'Kalender-Helfer nicht verfügbar.' }
-      if (!calendarId || !events?.length) return { count: 0 }
-      const r = await run<{ count?: number } | null>(
+      if (!calendarId || !events?.length) return { count: 0, ids: [] }
+      const r = await run<{ count?: number; ids?: string[] } | null>(
         ['add', calendarId],
         25_000,
         null,
         JSON.stringify(events)
       )
       return r && typeof r.count === 'number'
-        ? { count: r.count }
+        ? { count: r.count, ids: Array.isArray(r.ids) ? r.ids : [] }
         : { error: 'Eintragen fehlgeschlagen.' }
+    }
+  )
+
+  ipcMain.handle(
+    'cal:update',
+    async (
+      _e,
+      calendarId: string,
+      events: { id: string; title: string; start: string; end: string; notes?: string }[]
+    ): Promise<{ count: number } | { error: string }> => {
+      if (!isAvailable()) return { error: 'Kalender-Helfer nicht verfügbar.' }
+      if (!calendarId || !events?.length) return { count: 0 }
+      const r = await run<{ count?: number } | null>(
+        ['update', calendarId],
+        25_000,
+        null,
+        JSON.stringify(events)
+      )
+      return r && typeof r.count === 'number'
+        ? { count: r.count }
+        : { error: 'Aktualisieren fehlgeschlagen.' }
+    }
+  )
+
+  ipcMain.handle(
+    'cal:delete',
+    async (
+      _e,
+      calendarId: string,
+      eventIds: string[]
+    ): Promise<{ count: number } | { error: string }> => {
+      if (!isAvailable()) return { error: 'Kalender-Helfer nicht verfügbar.' }
+      if (!calendarId || !eventIds?.length) return { count: 0 }
+      const r = await run<{ count?: number } | null>(
+        ['delete', calendarId],
+        20_000,
+        null,
+        JSON.stringify(eventIds)
+      )
+      return r && typeof r.count === 'number'
+        ? { count: r.count }
+        : { error: 'Löschen fehlgeschlagen.' }
     }
   )
 }

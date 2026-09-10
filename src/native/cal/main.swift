@@ -11,7 +11,14 @@
 //       → legt einen neuen Ereignis-Kalender in der iCloud-Quelle an → {"id","title","color"}
 //   astra-cal add <calId>
 //       → liest ein JSON-Array [{title,start,end,notes?}] von stdin und legt die
-//         Termine in dem Kalender an → {"count": n}
+//         Termine in dem Kalender an → {"count": n, "ids": [String]} (Reihenfolge
+//         wie in der Eingabe, "" wenn ein Eintrag nicht gespeichert werden konnte)
+//   astra-cal update <calId>
+//       → liest [{id,title,start,end,notes?}] von stdin und aktualisiert die
+//         zugehörigen Termine (id = eventIdentifier) → {"count": n}
+//   astra-cal delete <calId>
+//       → liest [String] (eventIdentifier) von stdin und löscht die Termine
+//         → {"count": n}
 //   astra-cal events <vonISO> <bisISO> [calId,calId,…]
 //       → [{"id","title","start","end","allDay","location","notes","calendarId","calendarTitle","color","url"}]
 //         Serientermine sind im Zeitfenster bereits aufgelöst.
@@ -145,15 +152,61 @@ case "add":
     let iso2 = ISO8601DateFormatter()
     func parse(_ s: String) -> Date? { iso.date(from: s) ?? iso2.date(from: s) }
     var count = 0
+    var ids: [String] = []
     for it in items {
-        guard let s = parse(it.start), let e = parse(it.end) else { continue }
+        guard let s = parse(it.start), let e = parse(it.end) else { ids.append(""); continue }
         let ev = EKEvent(eventStore: store)
         ev.calendar = cal
         ev.title = it.title
         ev.startDate = s
         ev.endDate = e
         if let n = it.notes { ev.notes = n }
+        do {
+            // pro Termin committen – so ist `eventIdentifier` sicher gesetzt
+            // (den brauchen wir für die spätere Aktualisierung/Löschung).
+            try store.save(ev, span: .thisEvent, commit: true)
+            count += 1
+            ids.append(ev.eventIdentifier ?? "")
+        } catch { ids.append("") }
+    }
+    struct AddOut: Encodable { let count: Int; let ids: [String] }
+    emit(AddOut(count: count, ids: ids))
+
+case "update":
+    guard args.count >= 3 else { fail("usage: astra-cal update <calId>  (JSON von stdin)") }
+    guard statusString() == "authorized" else { fail("kein Kalenderzugriff") }
+    struct UpEvent: Decodable { let id: String; let title: String; let start: String; let end: String; let notes: String? }
+    let raw = FileHandle.standardInput.readDataToEndOfFile()
+    guard let items = try? JSONDecoder().decode([UpEvent].self, from: raw) else { fail("stdin: kein gültiges Termin-JSON") }
+    let iso = ISO8601DateFormatter()
+    iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    let iso2 = ISO8601DateFormatter()
+    func parse(_ s: String) -> Date? { iso.date(from: s) ?? iso2.date(from: s) }
+    var count = 0
+    for it in items {
+        // Serien-Suffix „…@ISO" tolerieren.
+        let ident = it.id.contains("@") ? String(it.id.split(separator: "@")[0]) : it.id
+        guard let ev = store.event(withIdentifier: ident) else { continue }
+        guard let s = parse(it.start), let e = parse(it.end) else { continue }
+        ev.title = it.title
+        ev.startDate = s
+        ev.endDate = e
+        if let n = it.notes { ev.notes = n }
         do { try store.save(ev, span: .thisEvent, commit: false); count += 1 } catch {}
+    }
+    try? store.commit()
+    emit(["count": count])
+
+case "delete":
+    guard args.count >= 3 else { fail("usage: astra-cal delete <calId>  (JSON von stdin)") }
+    guard statusString() == "authorized" else { fail("kein Kalenderzugriff") }
+    let raw = FileHandle.standardInput.readDataToEndOfFile()
+    guard let rawIds = try? JSONDecoder().decode([String].self, from: raw) else { fail("stdin: kein gültiges ID-JSON") }
+    var count = 0
+    for rid in rawIds {
+        let ident = rid.contains("@") ? String(rid.split(separator: "@")[0]) : rid
+        guard let ev = store.event(withIdentifier: ident) else { continue }
+        do { try store.remove(ev, span: .thisEvent, commit: false); count += 1 } catch {}
     }
     try? store.commit()
     emit(["count": count])

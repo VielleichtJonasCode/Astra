@@ -50,7 +50,9 @@ try {
       '-framework',
       'Quartz',
       '-framework',
-      'ImageIO'
+      'ImageIO',
+      '-framework',
+      'CoreImage'
     ],
     { stdio: 'inherit' }
   )

@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
-import { useStudienplanerStore } from '../store/studienplanerStore'
-import type { Lernplan } from '../studienplaner/prep'
-import { analyzeProgress } from '../studienplaner/prep'
+import { useStudienplanerStore, joinPath } from '../store/studienplanerStore'
+import type { Lernplan, PlanTask } from '../studienplaner/prep'
+import { analyzeProgress, courseNoteList } from '../studienplaner/prep'
 import { daysLeftLabel, daysUntil } from '../studienplaner/calendar'
+import { openPaths } from '../lib/fileActions'
 import { PlanChecklist } from './PlanChecklist'
+import { AddTaskForm } from './AddTaskForm'
+import { CorrectRateBar } from './CorrectRateBar'
 import type { PrepTab } from './PrepPanel'
 import { Button } from './common/Button'
 import { Icon } from './common/Icon'
@@ -27,7 +30,9 @@ export function CoursePlanInline({
 }): JSX.Element {
   const loadLernplan = useStudienplanerStore((s) => s.loadLernplan)
   const saveLernplan = useStudienplanerStore((s) => s.saveLernplan)
+  const index = useStudienplanerStore((s) => s.index)
   const [plan, setPlan] = useState<Lernplan | null>(null)
+  const [addingTask, setAddingTask] = useState(false)
 
   useEffect(() => {
     let live = true
@@ -47,18 +52,33 @@ export function CoursePlanInline({
     )
   }
 
-  const toggle = (id: string): void => {
-    const now = new Date().toISOString()
-    const planTasks = (plan.planTasks ?? []).map((t) =>
-      t.id === id ? { ...t, done: !t.done, doneAt: now } : t
-    )
+  const commit = (planTasks: PlanTask[]): void => {
     const next = { ...plan, planTasks }
     setPlan(next)
     void saveLernplan(semester, kurs, next)
   }
+  const toggle = (id: string): void => {
+    const now = new Date().toISOString()
+    commit(
+      (plan.planTasks ?? []).map((t) => (t.id === id ? { ...t, done: !t.done, doneAt: now } : t))
+    )
+  }
+  const removeTask = (id: string): void => commit((plan.planTasks ?? []).filter((t) => t.id !== id))
+  const addTask = (task: PlanTask): void => {
+    commit([...(plan.planTasks ?? []), task])
+    setAddingTask(false)
+  }
+  const openAttachment = (rel: string): void => {
+    const root = useStudienplanerStore.getState().path
+    if (!root) return
+    const abs = joinPath(root, rel)
+    if (rel.toLowerCase().endsWith('.pdf')) void openPaths([abs])
+    else window.api.spReveal(abs)
+  }
 
   const perf = analyzeProgress(plan)
   const tasks = plan.planTasks ?? []
+  const noteList = courseNoteList(index, semester, kurs)
   const n = plan.examDateIso ? daysUntil(plan.examDateIso) : null
 
   return (
@@ -74,21 +94,51 @@ export function CoursePlanInline({
           <span>
             {plan.quizzes.length} {plan.quizzes.length === 1 ? 'Quiz' : 'Quizze'}
           </span>
-          {perf.answered > 0 && <span>{Math.round(perf.accuracy * 100)}% richtig</span>}
           {(plan.resources?.length ?? 0) > 0 && <span>{plan.resources!.length} Material</span>}
         </div>
-        <Button size="sm" icon="graduation" onClick={() => onOpen('plan')}>
-          Lernplan bearbeiten
-        </Button>
+        <div className="cpi__rowbtns">
+          <Button size="sm" variant="ghost" icon="plus" onClick={() => setAddingTask((v) => !v)}>
+            Aufgabe
+          </Button>
+          <Button size="sm" icon="graduation" onClick={() => onOpen('plan')}>
+            Lernplan bearbeiten
+          </Button>
+        </div>
       </div>
 
+      {perf.overallTotal > 0 && (
+        <CorrectRateBar correct={perf.overallCorrect} total={perf.overallTotal} />
+      )}
+
+      {addingTask && (
+        <AddTaskForm notes={noteList} onAdd={addTask} onCancel={() => setAddingTask(false)} />
+      )}
+
       {tasks.length > 0 ? (
-        <PlanChecklist tasks={tasks} onToggle={toggle} />
+        <PlanChecklist
+          items={tasks.map((t) => ({ key: t.id, task: t }))}
+          onToggle={toggle}
+          onRemove={removeTask}
+          onOpenAttachment={openAttachment}
+          attachmentName={(rel) =>
+            rel
+              .split('/')
+              .pop()
+              ?.replace(/\.[^.]+$/, '') ?? rel
+          }
+          onSetScore={(id, score) =>
+            commit(
+              (plan.planTasks ?? []).map((t) =>
+                t.id === id ? { ...t, score: score ?? undefined } : t
+              )
+            )
+          }
+        />
       ) : (
         <div className="cpi__empty">
           <p>
-            Noch kein Tagesplan für {kurs}. Im Lernplan-Editor baut Gemini einen – mit Zeiten zum
-            Abhaken, angepasst an deine Quiz-Leistung.
+            Noch kein Tagesplan für {kurs}. „Aufgabe" fügt eine eigene hinzu, oder Gemini baut im
+            Lernplan-Editor einen – mit Zeiten zum Abhaken.
           </p>
           <Button size="sm" icon="sparkles" onClick={() => onOpen('plan')}>
             Lernplan erstellen

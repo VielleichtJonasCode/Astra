@@ -1,0 +1,49 @@
+/* Trefferquoten-Balken (CorrectRateBar) – ein Wert, Farbe nach Quote */
+.crate {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.crate__head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: var(--fs-11);
+  font-variant-numeric: tabular-nums;
+}
+.crate__label {
+  color: var(--text-secondary);
+  font-weight: var(--fw-medium);
+}
+.crate__val {
+  font-weight: var(--fw-semibold);
+  margin-left: auto;
+}
+.crate--sm .crate__val {
+  margin-left: 0;
+}
+.crate__frac {
+  color: var(--text-tertiary);
+}
+.crate--sm .crate__frac {
+  margin-left: auto;
+}
+
+.crate__bar {
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--danger, #ff3b30) 26%, var(--bg-hover));
+}
+.crate--sm .crate__bar {
+  height: 6px;
+}
+.crate__seg {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition:
+    width 0.25s ease,
+    background 0.25s ease;
+}

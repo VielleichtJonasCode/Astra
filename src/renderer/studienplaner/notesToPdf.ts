@@ -59,6 +59,16 @@ export async function imagesToSearchablePdf(inputs: ScanInput[]): Promise<Uint8A
   return doc.save()
 }
 
+/** Hängt die Seiten von `add` an `base` an (beide PDF-Bytes) und gibt das Ergebnis zurück. */
+export async function appendPdf(base: Uint8Array, add: Uint8Array): Promise<Uint8Array> {
+  const { PDFDocument } = await import('pdf-lib')
+  const doc = await PDFDocument.load(base, { ignoreEncryption: true, updateMetadata: false })
+  const extra = await PDFDocument.load(add, { ignoreEncryption: true, updateMetadata: false })
+  const pages = await doc.copyPages(extra, extra.getPageIndices())
+  for (const p of pages) doc.addPage(p)
+  return doc.save()
+}
+
 /** Fügt einem vorhandenen PDF eine unsichtbare Textebene hinzu (Seite für Seite). */
 export async function addTextLayerToPdf(
   pdfBytes: Uint8Array,

@@ -4,13 +4,18 @@ copyright: '© 2026 Jonathan Weidner — AGPL-3.0-or-later'
 directories:
   buildResources: resources
   output: release
+# Renderer ist ein gebündeltes SPA und main/preload brauchen zur Laufzeit nur
+# `electron` – daher werden KEINE node_modules mitgepackt (sparte ~130 MB im
+# app.asar, das macht den Kaltstart spürbar schneller).
 files:
   - out/**/*
   - package.json
+  - '!node_modules/**/*'
+asar: true
 asarUnpack:
   - '**/*.wasm'
-  - '**/node_modules/mupdf/**'
-  - '**/node_modules/tesseract.js-core/**'
+  - '**/tesseract/**'
+  - '**/ffmpeg/**'
 extraResources:
   - from: resources/bin
     to: bin
@@ -24,6 +29,13 @@ fileAssociations:
     rank: Alternate
     mimeType: application/pdf
     icon: resources/icon.png
+# macOS-Widgets (WidgetKit): Erst nach `npm run widgets` + Aktivierung von
+# Code-Signing hier einzubinden. Vollständige Anleitung:
+# src/native/widgets/README.md
+#   mac.identity / hardenedRuntime: true / entitlements / entitlementsInherit
+#   mac.extraFiles:
+#     - from: resources/AstraWidgets.appex
+#       to: PlugIns/AstraWidgets.appex
 mac:
   category: public.app-category.productivity
   extendInfo:

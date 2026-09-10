@@ -26,6 +26,7 @@
     "tray-icon": "node scripts/make-tray-icon.mjs",
     "ocr-helper": "node scripts/build-ocr-helper.mjs --force",
     "cal-helper": "node scripts/build-cal-helper.mjs --force",
+    "widgets": "node scripts/build-widgets.mjs --run",
     "test-pdf": "node scripts/make-test-pdf.mjs",
     "copy-assets:force": "node scripts/copy-assets.mjs --force"
   },

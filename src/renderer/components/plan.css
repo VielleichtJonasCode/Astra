@@ -50,18 +50,22 @@
 .plchk__task {
   position: relative;
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto 1fr auto;
   align-items: start;
   gap: 10px;
-  padding: 8px 10px;
+  padding: 8px 10px 8px 12px;
   border: 1px solid var(--border-inset);
+  border-left: 3px solid var(--fach, transparent);
   border-radius: var(--r-md);
-  cursor: pointer;
 }
 .plchk__task:hover {
   background: var(--bg-hover);
 }
-.plchk__task > input {
+.plchk__check {
+  cursor: pointer;
+  display: inline-flex;
+}
+.plchk__check > input {
   position: absolute;
   opacity: 0;
   pointer-events: none;
@@ -87,12 +91,78 @@
 .plchk__info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
 }
 .plchk__title {
   font-size: var(--fs-13);
   color: var(--text-primary);
+}
+.plchk__fach {
+  display: inline-block;
+  margin-right: 7px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: var(--fw-semibold);
+  background: color-mix(in srgb, var(--fach, var(--accent)) 22%, transparent);
+  color: var(--fach, var(--accent));
+  vertical-align: 1px;
+}
+.plchk__manual {
+  margin-left: 7px;
+  font-size: 10px;
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-inset);
+  border-radius: 999px;
+  padding: 0 6px;
+  vertical-align: 1px;
+}
+.plchk__note {
+  font-size: var(--fs-11);
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+}
+.plchk__atts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 1px;
+}
+.plchk__att {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border-inset);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 10.5px;
+  cursor: pointer;
+}
+.plchk__att:hover {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+.plchk__del {
+  border: 0;
+  background: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 2px;
+  opacity: 0;
+}
+.plchk__task:hover .plchk__del {
+  opacity: 0.75;
+}
+.plchk__del:hover {
+  color: var(--danger);
+  opacity: 1;
 }
 .plchk__task.is-done .plchk__title {
   text-decoration: line-through;
@@ -219,4 +289,137 @@
 .sp__coursehead span {
   font-size: var(--fs-12);
   color: var(--text-tertiary);
+}
+
+/* ── Selbst Aufgabe anlegen (AddTaskForm) ────────────────────────────── */
+.addtask {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  margin: 8px 0 12px;
+  border: 1px solid var(--border-inset);
+  border-radius: var(--r-md);
+  background: var(--bg-elevated);
+}
+.addtask__row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.addtask__row label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: var(--fs-11);
+  color: var(--text-tertiary);
+}
+.addtask__row input,
+.addtask__row select {
+  font: inherit;
+  font-size: var(--fs-12);
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg-content);
+  color: var(--text-primary);
+}
+.addtask__atts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.addtask__attslabel {
+  width: 100%;
+  font-size: var(--fs-11);
+  color: var(--text-tertiary);
+}
+.addtask__att {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border-inset);
+  font-size: var(--fs-12);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.addtask__att.is-on {
+  border-color: var(--accent);
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.addtask__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 560px) {
+  .addtask__row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* — Aufgaben-Ergebnis (richtig/falsch) — */
+.plchk__scoreadd {
+  align-self: flex-start;
+  border: 1px dashed var(--border-strong);
+  background: none;
+  color: var(--text-tertiary);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 10.5px;
+  cursor: pointer;
+}
+.plchk__scoreadd:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+.plchk__score {
+  align-self: flex-start;
+  border: 0;
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 10.5px;
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+}
+.plchk__score.is-good {
+  background: color-mix(in srgb, var(--success, #34c759) 22%, transparent);
+  color: var(--success, #34c759);
+}
+.plchk__score.is-mid {
+  background: color-mix(in srgb, var(--warning) 22%, transparent);
+  color: var(--warning);
+}
+.plchk__score.is-bad {
+  background: color-mix(in srgb, var(--danger) 20%, transparent);
+  color: var(--danger);
+}
+.plchk__scoreedit {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.plchk__scoreedit input {
+  width: 52px;
+  font: inherit;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg-content);
+  color: var(--text-primary);
+}
+.plchk__scoreedit button {
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border-radius: var(--r-sm);
+  padding: 3px 8px;
+  font: inherit;
+  cursor: pointer;
 }

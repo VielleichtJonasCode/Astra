@@ -1,18 +1,30 @@
-import { nanoid } from 'nanoid'
 import type { PlanTask, QuizItem } from './prep'
 import { AI_NOTES_FILE, AI_SYSTEM_BASE } from './aiSystemPrompt'
 import { joinPath } from './paths'
 import { useSettingsStore } from '../store/settingsStore'
+import {
+  parseNextStep,
+  parseQuizItems,
+  parseRescheduleMoves,
+  parseSemesterSetup,
+  parseStudyPlan,
+  type StudyPlan,
+  type NextStep,
+  type RescheduleMove,
+  type SemesterSetup
+} from './aiParse'
+
+export type { StudyPlan, NextStep, RescheduleMove, SemesterSetup } from './aiParse'
 
 /**
  * KI-Funktionen für die Prüfungsvorbereitung (Gemini, Aufruf über den
- * Hauptprozess). Alle Funktionen bekommen den erkannten Notiztext als Kontext
- * und werfen bei Fehlern eine `Error` mit lesbarer Meldung.
+ * Hauptprozess). Jede Funktion baut hier den Prompt, `run()` schickt ihn an
+ * Gemini, und die reinen Parser aus `aiParse.ts` machen aus der Antwort
+ * geprüfte Daten – auch wenn Gemini Zäune, Fließtext oder Unfug liefert.
  */
 
 /** Basis-Anweisung + optionale eigene Regeln aus <Studium>/KI-Anweisung.md. */
-async function systemInstruction(): Promise<string> {
-  const root = useSettingsStore.getState().studienplanerPath
+async function buildSystemInstruction(root: string): Promise<string> {
   if (!root) return AI_SYSTEM_BASE
   const file = joinPath(root, AI_NOTES_FILE)
   if (!(await window.api.spExists(file))) return AI_SYSTEM_BASE
@@ -26,6 +38,18 @@ async function systemInstruction(): Promise<string> {
     /* nicht lesbar – Basis nutzen */
   }
   return AI_SYSTEM_BASE
+}
+
+// Kurzzeit-Cache: der Nutzer stellt oft mehrere KI-Anfragen kurz hintereinander;
+// die KI-Anweisung dafür nicht jedes Mal per IPC von der Platte lesen.
+let sysCache: { root: string; text: string; at: number } | null = null
+
+async function systemInstruction(): Promise<string> {
+  const root = useSettingsStore.getState().studienplanerPath ?? ''
+  if (sysCache && sysCache.root === root && Date.now() - sysCache.at < 20_000) return sysCache.text
+  const text = await buildSystemInstruction(root)
+  sysCache = { root, text, at: Date.now() }
+  return text
 }
 
 async function run(prompt: string, opts: { json?: boolean; temp?: number } = {}): Promise<string> {
@@ -65,31 +89,54 @@ export async function makeSummary(kurs: string, notes: string): Promise<string> 
   )
 }
 
+/**
+ * Beantwortet im laufenden „Fragen"-Dialog eine Frage zu einem Fach. Bekommt den
+ * bisherigen Verlauf (für echte Rückfragen) und optional die Fach-Zusammenfassung
+ * als zusätzlichen Kontext.
+ */
+/**
+ * Wertet die Lern- und Prüfungsdaten aller Fächer aus (Digest aus `grades.ts`)
+ * und gibt Verbesserungstipps fürs Lernen als Markdown zurück.
+ */
+export async function analyzeStudyTactics(digest: string): Promise<string> {
+  return run(
+    `Analysiere die folgenden Lern- und Prüfungsdaten eines Studierenden und gib eine ehrliche, ` +
+      `konkrete Auswertung der Lernstrategie mit Verbesserungstipps. Struktur in Markdown, genau diese Abschnitte:\n` +
+      `## Was gut läuft\n(2–3 Stichpunkte)\n` +
+      `## Woran es hakt\n(die klarsten Muster in den Daten: Zusammenhang zwischen erledigten Lernaufgaben ` +
+      `bzw. Quiz-Sicherheit und Note, schwache Semester, Fächer mit viel Aufwand aber mäßiger Note, unfertige Lernpläne)\n` +
+      `## Konkret ändern\n(3–5 nummerierte, spezifische Maßnahmen – auf die genannten Fächer und Muster bezogen)\n\n` +
+      `Nur aus den Daten schließen, nichts erfinden, keine Pauschaltipps, kein Vorwort.` +
+      `\n\n=== DATEN ===\n${digest}`
+  )
+}
+
 export async function answerQuestion(
   kurs: string,
   notes: string,
   history: { role: 'user' | 'model'; text: string }[],
-  question: string
+  question: string,
+  extra?: { summary?: string }
 ): Promise<string> {
   const conv = history
-    .slice(-6)
-    .map((m) => `${m.role === 'user' ? 'Frage' : 'Antwort'}: ${m.text}`)
+    .filter((m) => m.text.trim() && !m.text.startsWith('⚠️'))
+    .slice(-12)
+    .map((m) => `${m.role === 'user' ? 'STUDENT' : 'DU'}: ${m.text}`)
     .join('\n')
+  const sum = extra?.summary?.trim()
+    ? `\n\n=== BISHERIGE ZUSAMMENFASSUNG (Kontext, darfst du nutzen) ===\n${extra.summary.trim().slice(0, 4000)}`
+    : ''
   return run(
-    `Beantworte die Frage einer/eines Studierenden zu „${kurs}" auf Basis der Notizen. ` +
-      `Kurz, konkret, mit Beispiel wenn hilfreich.` +
-      (conv ? `\n\nBisheriges Gespräch:\n${conv}` : '') +
-      `\n\nNeue Frage: ${question}` +
+    `Fach „${kurs}". Du führst ein fortlaufendes Lern-Gespräch und beantwortest die nächste Frage ` +
+      `der/des Studierenden auf Basis der Notizen. Sauberes Markdown, konkret, mit Beispiel wenn es hilft; ` +
+      `beziehe dich auf das bisherige Gespräch und wiederhole nichts unnötig. Fragt die Person nach mehr ` +
+      `Tiefe („genauer", „warum", „Beispiel"), dann Zwischenschritte einzeln, die Intuition dahinter und ein ` +
+      `durchgerechnetes Beispiel.` +
+      (conv ? `\n\n=== BISHERIGES GESPRÄCH ===\n${conv}` : '') +
+      `\n\n=== NEUE FRAGE ===\n${question}` +
+      sum +
       notesBlock(notes)
   )
-}
-
-interface RawQuiz {
-  question?: string
-  choices?: string[]
-  answer?: number
-  explanation?: string
-  topic?: string
 }
 
 export async function makeQuiz(
@@ -116,33 +163,39 @@ export async function makeQuiz(
       notesBlock(notes),
     { json: true, temp: 0.6 }
   )
-  let raw: RawQuiz[]
-  try {
-    const parsed = JSON.parse(text) as unknown
-    raw = Array.isArray(parsed)
-      ? (parsed as RawQuiz[])
-      : ((parsed as { questions?: RawQuiz[] }).questions ?? [])
-  } catch {
-    throw new Error('Die KI-Antwort war kein gültiges Quiz-JSON. Nochmal versuchen.')
-  }
-  const items = raw
-    .filter((q) => q.question && Array.isArray(q.choices) && q.choices.length >= 2)
-    .map<QuizItem>((q) => ({
-      id: nanoid(8),
-      question: String(q.question),
-      choices: q.choices!.map(String),
-      answer: Math.max(0, Math.min((q.choices!.length ?? 1) - 1, Number(q.answer) || 0)),
-      explanation: String(q.explanation ?? ''),
-      topic: q.topic ? String(q.topic).slice(0, 40) : focusTopic
-    }))
+  const items = parseQuizItems(text, focusTopic)
   if (!items.length) throw new Error('Kein verwertbares Quiz erhalten. Nochmal versuchen.')
   return items
 }
 
-export interface StudyPlan {
-  markdown: string
-  tasks: PlanTask[]
+export interface PlanContext {
+  busyText?: string
+  perfText?: string
+  otherExamsText?: string
 }
+
+/** Gemeinsame Kontext-Blöcke (Kalender · Leistung · andere Prüfungen) für Plan-Erstellung und -Überarbeitung. */
+function planContextBlocks(ctx: PlanContext): string {
+  const busy = ctx.busyText
+    ? `\n\nBereits verplante Zeiten des Studierenden – lege die Lernblöcke gezielt in die ` +
+      `freien Lücken dazwischen, überlappe NIE mit diesen Terminen, an vollen Tagen weniger ` +
+      `einplanen, freie Tage stärker nutzen:\n${ctx.busyText}`
+    : ''
+  const perf = ctx.perfText
+    ? `\n\nAktuelle Leistung / Fehlerquoten – richte den Plan danach aus: schwachen Themen deutlich mehr Zeit, ` +
+      `eigene Wiederholungstage und je einen "quiz"-Block; starke Themen nur kurz auffrischen:\n${ctx.perfText}`
+    : ''
+  const others = ctx.otherExamsText
+    ? `\n\nWeitere Prüfungen des Studierenden (ganzer Zeitplan – NICHT für dieses Fach planen, aber ` +
+      `Rücksicht nehmen: in den letzten ~2 Tagen vor jeder anderen Prüfung hier nichts Großes einplanen):\n${ctx.otherExamsText}`
+    : ''
+  return busy + perf + others
+}
+
+const PLAN_SCHEMA =
+  `{"markdown": string (lesbarer Plan als Markdown-Liste/Tabelle, mit einem kurzen Absatz oben, ` +
+  `warum der Plan so aussieht – Bezug auf Leistung/schwache Themen/andere Prüfungen), ` +
+  `"tasks": [{"date":"YYYY-MM-DD","time":"HH:MM","title":string (kurz),"topic":string,"minutes":number,"kind":"lernen"|"wiederholen"|"quiz"}]}`
 
 export async function makeStudyPlan(
   kurs: string,
@@ -150,62 +203,74 @@ export async function makeStudyPlan(
   examDateIso: string | null,
   notes: string,
   busyText?: string,
-  perfText?: string
+  perfText?: string,
+  otherExamsText?: string
 ): Promise<StudyPlan> {
   const today = new Date().toISOString().slice(0, 10)
   const until = examDateIso
     ? `bis zur Prüfung am ${new Date(examDateIso).toLocaleDateString('de-DE')} (${examDateIso.slice(0, 10)})`
     : 'für die nächsten 14 Tage'
-  const busy = busyText
-    ? `\n\nBereits verplante Zeiten des Studierenden (nicht überlappen, an vollen Tagen weniger einplanen, freie Tage stärker nutzen):\n${busyText}`
-    : ''
-  const perf = perfText
-    ? `\n\nAktuelle Leistung – richte den Plan danach aus: schwachen Themen deutlich mehr Zeit, ` +
-      `eigene Wiederholungstage und je einen "quiz"-Block; starke Themen nur kurz auffrischen:\n${perfText}`
-    : ''
   const text = await run(
     `Erstelle einen realistischen, tageweisen Lernplan (${until}, heute ist ${today}) ` +
       `für „${examTitle}" im Fach „${kurs}". Nutze die Themen aus den Notizen, verteile sie ` +
       `sinnvoll, plane Wiederholungstage und einen Puffer vor der Prüfung. ` +
-      `Gib AUSSCHLIESSLICH JSON zurück: {"markdown": string (lesbarer Plan als Markdown-Liste/Tabelle, ` +
-      `mit einem kurzen Absatz oben, warum der Plan so aussieht – Bezug auf Leistung/schwache Themen), ` +
-      `"tasks": [{"date":"YYYY-MM-DD","time":"HH:MM","title":string (kurz),"topic":string,"minutes":number,"kind":"lernen"|"wiederholen"|"quiz"}]}. ` +
+      `Gib AUSSCHLIESSLICH JSON zurück: ${PLAN_SCHEMA}. ` +
       `tasks nur an realen Kalendertagen zwischen heute und Prüfung, minutes 30–150, ` +
       `time am besten nachmittags/abends und an vollen Tagen später.` +
-      busy +
-      perf +
+      planContextBlocks({ busyText, perfText, otherExamsText }) +
       notesBlock(notes),
     { json: true }
   )
-  let parsed: { markdown?: string; tasks?: unknown[] }
-  try {
-    parsed = JSON.parse(text) as { markdown?: string; tasks?: unknown[] }
-  } catch {
-    return { markdown: text, tasks: [] }
-  }
-  const KINDS = new Set(['lernen', 'wiederholen', 'quiz'])
-  const tasks: PlanTask[] = (Array.isArray(parsed.tasks) ? parsed.tasks : [])
-    .map((t) => t as Partial<PlanTask>)
-    .filter((t) => t.date && /^\d{4}-\d{2}-\d{2}$/.test(String(t.date)) && t.title)
-    .map((t) => ({
-      id: nanoid(6),
-      date: String(t.date),
-      time: /^\d{1,2}:\d{2}$/.test(String(t.time)) ? String(t.time).padStart(5, '0') : undefined,
-      title: String(t.title).slice(0, 90),
-      topic: String(t.topic ?? '').slice(0, 120),
-      minutes: Math.max(15, Math.min(240, Math.round(Number(t.minutes) || 60))),
-      kind: KINDS.has(String(t.kind)) ? (String(t.kind) as PlanTask['kind']) : 'lernen',
-      done: false
-    }))
-  return { markdown: String(parsed.markdown ?? text), tasks }
+  return parseStudyPlan(text)
 }
 
-export interface NextStep {
-  /** Kurzer Rat in 1–2 Sätzen. */
-  text: string
-  action: 'quiz' | 'review' | 'ready'
-  /** Thema für action = "quiz" / "review". */
-  topic?: string
+/** Kompakte Aufgaben-Darstellung für den „aktueller Plan"-Block einer Überarbeitung. */
+function tasksForPrompt(tasks: PlanTask[]): string {
+  return JSON.stringify(
+    tasks.map((t) => ({
+      date: t.date,
+      time: t.time ?? '',
+      title: t.title,
+      topic: t.topic,
+      minutes: t.minutes,
+      kind: t.kind ?? 'lernen',
+      done: Boolean(t.done)
+    }))
+  )
+}
+
+/**
+ * Überarbeitet einen bestehenden Lernplan-Entwurf anhand eines Änderungswunsches.
+ * Bewährtes bleibt, erledigte Aufgaben (done:true) werden nicht gestrichen.
+ * Das Ergebnis ist wieder nur ein Entwurf – der Nutzer bestätigt separat.
+ */
+export async function reviseStudyPlan(
+  kurs: string,
+  examTitle: string,
+  examDateIso: string | null,
+  notes: string,
+  current: { markdown: string; tasks: PlanTask[] },
+  feedback: string,
+  busyText?: string,
+  perfText?: string,
+  otherExamsText?: string
+): Promise<StudyPlan> {
+  const today = new Date().toISOString().slice(0, 10)
+  const until = examDateIso ? `bis ${examDateIso.slice(0, 10)}` : 'für die nächsten 14 Tage'
+  const text = await run(
+    `Überarbeite den bestehenden Lernplan für „${examTitle}" im Fach „${kurs}" (${until}, heute ist ${today}). ` +
+      `Behalte, was gut ist – ändere nur, was der Änderungswunsch verlangt oder was dadurch nötig wird. ` +
+      `Bereits erledigte Aufgaben (done:true) NICHT streichen und möglichst am selben Tag lassen. ` +
+      `Gib AUSSCHLIESSLICH JSON im selben Schema zurück: ${PLAN_SCHEMA}. minutes 30–150, ` +
+      `tasks nur an realen Kalendertagen ab heute.` +
+      `\n\n=== AKTUELLER PLAN (Begründung) ===\n${current.markdown.slice(0, 4000)}` +
+      `\n\n=== AKTUELLE AUFGABEN (JSON) ===\n${tasksForPrompt(current.tasks)}` +
+      `\n\n=== ÄNDERUNGSWUNSCH ===\n${feedback.trim().slice(0, 800)}` +
+      planContextBlocks({ busyText, perfText, otherExamsText }) +
+      notesBlock(notes),
+    { json: true }
+  )
+  return parseStudyPlan(text)
 }
 
 /** Empfiehlt anhand der Leistung den nächsten Schritt. */
@@ -222,16 +287,71 @@ export async function recommendNext(
       `"ready" = Leistung reicht, nur noch auffrischen.`,
     { json: true, temp: 0.4 }
   )
-  try {
-    const j = JSON.parse(text) as Partial<NextStep>
-    const action =
-      j.action === 'quiz' || j.action === 'review' || j.action === 'ready' ? j.action : 'review'
-    return {
-      text: String(j.text ?? 'Weiter üben.'),
-      action,
-      topic: j.topic ? String(j.topic) : undefined
-    }
-  } catch {
-    return { text: text.slice(0, 300), action: 'review' }
-  }
+  return parseNextStep(text)
+}
+
+/**
+ * Verteilt überfällige Aufgaben neu auf die nächsten Tage, ohne mit den schon
+ * geplanten Terminen oder dem Kalender zu kollidieren – nichts fällt weg.
+ * Gibt nur die neuen Datum/Uhrzeit-Werte der überfälligen Aufgaben zurück.
+ */
+export async function rescheduleOverdue(
+  kurs: string,
+  overdue: { id: string; title: string; topic: string; minutes: number; kind?: string }[],
+  keep: { date: string; time?: string; title: string }[],
+  busyText?: string,
+  examDateIso?: string | null
+): Promise<RescheduleMove[]> {
+  const today = new Date().toISOString().slice(0, 10)
+  const until = examDateIso
+    ? `spätestens bis ${examDateIso.slice(0, 10)}`
+    : 'in den nächsten 14 Tagen'
+  const keepTxt = keep.length
+    ? `\n\nBereits geplante Aufgaben (NICHT verschieben, nicht am selben Slot doppeln):\n` +
+      keep.map((k) => `- ${k.date}${k.time ? ' ' + k.time : ''}: ${k.title}`).join('\n')
+    : ''
+  const busy = busyText
+    ? `\n\nBelegte Kalenderzeiten (nicht überlappen, volle Tage meiden):\n${busyText}`
+    : ''
+  const list = overdue
+    .map(
+      (t) =>
+        `- id ${t.id}: ${t.title} (${t.topic || 'Thema?'}, ${t.minutes} min, ${t.kind ?? 'lernen'})`
+    )
+    .join('\n')
+  const text = await run(
+    `Fach „${kurs}". Diese Aufgaben sind überfällig und müssen neu eingeplant werden ` +
+      `(ab morgen, ${until}, heute ist ${today}). Verteile sie sinnvoll über die freien Tage, ` +
+      `Uhrzeit nachmittags/abends, an vollen Tagen weniger. Keine Aufgabe darf wegfallen.\n${list}` +
+      keepTxt +
+      busy +
+      `\n\nGib AUSSCHLIESSLICH ein JSON-Array zurück, je überfälliger Aufgabe genau ein Eintrag: ` +
+      `[{"id": string (exakt wie oben), "date": "YYYY-MM-DD", "time": "HH:MM"}].`,
+    { json: true }
+  )
+  return parseRescheduleMoves(
+    text,
+    overdue.map((t) => t.id),
+    today
+  )
+}
+
+/**
+ * Liest aus dem Text eines Modulhandbuchs / Stundenplans den Semesternamen,
+ * die Fächer, deren ECTS-Punkte und – falls genannt – Prüfungstermine heraus.
+ */
+export async function extractSemesterSetup(text: string): Promise<SemesterSetup> {
+  const today = new Date().toISOString().slice(0, 10)
+  const out = await run(
+    `Aus dem folgenden Text (Modulhandbuch / Stundenplan / Studienübersicht) die ` +
+      `Studien-Struktur herausziehen. Heute ist ${today}. ` +
+      `Gib AUSSCHLIESSLICH JSON zurück: {"semester": string (z. B. "WS 2025" oder "3. Semester"), ` +
+      `"courses": [{"name": string (Fach-/Modulname, ohne "Vorlesung/Übung"-Zusatz), ` +
+      `"ects": number (Leistungspunkte, weglassen wenn unbekannt), ` +
+      `"examDateIso": "YYYY-MM-DD" (Prüfungstermin, nur wenn eindeutig genannt)}]}. ` +
+      `Nur echte Module, keine Dubletten.` +
+      notesBlock(text),
+    { json: true }
+  )
+  return parseSemesterSetup(out)
 }

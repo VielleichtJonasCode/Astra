@@ -27,10 +27,19 @@ interface CalState {
   setCalendar: (id: string | null) => Promise<void>
   createStudiumCalendar: () => Promise<void>
   refresh: () => Promise<void>
-  /** Trägt Termine in den Studium-Kalender ein; gibt die Anzahl zurück. */
+  /** Holt Termine für einen (evtl. weiteren) Zeitraum und mischt sie zu `events` – für die Kalender-Seite. */
+  ensureRange: (fromIso: string, toIso: string) => Promise<void>
+  /** Trägt Termine in den Studium-Kalender ein; gibt Anzahl + neue Event-IDs
+   *  (Reihenfolge wie `events`, "" wenn ein Eintrag scheiterte) zurück. */
   addEvents: (
     events: { title: string; start: string; end: string; notes?: string }[]
+  ) => Promise<{ count: number; ids: string[] }>
+  /** Aktualisiert vorhandene Studium-Termine (per Event-ID); gibt die Anzahl zurück. */
+  updateEvents: (
+    events: { id: string; title: string; start: string; end: string; notes?: string }[]
   ) => Promise<number>
+  /** Löscht Studium-Termine (per Event-ID); gibt die Anzahl zurück. */
+  deleteEvents: (eventIds: string[]) => Promise<number>
   /** Demo-Modus mit vorgegebenen Terminen betreten. */
   enterDemo: (events: CalEvent[]) => void
   /** Demo-Modus verlassen und echten Kalender wieder laden. */
@@ -120,11 +129,26 @@ export const useCalendarStore = create<CalState>((set, get) => ({
     set({ events, loading: false, lastSync: Date.now() })
   },
 
+  ensureRange: async (fromIso, toIso) => {
+    if (get().demo || get().status !== 'authorized') return
+    const id = useSettingsStore.getState().studienplanerCalendarId
+    const fresh = await window.api
+      .calEvents(fromIso, toIso, id ? [id] : undefined)
+      .catch(() => [] as CalEvent[])
+    if (!fresh.length) return
+    set((s) => {
+      const seen = new Set(s.events.map((e) => e.id))
+      const merged = [...s.events, ...fresh.filter((e) => !seen.has(e.id))]
+      return { events: merged, lastSync: Date.now() }
+    })
+  },
+
   addEvents: async (events) => {
     if (get().demo) {
       // Demo: nur in den Speicher legen, kein echter Kalender.
+      const ids = events.map((_, i) => `demo-added-${Date.now()}-${i}`)
       const added: CalEvent[] = events.map((e, i) => ({
-        id: `demo-added-${Date.now()}-${i}`,
+        id: ids[i],
         title: e.title,
         start: e.start,
         end: e.end,
@@ -135,18 +159,69 @@ export const useCalendarStore = create<CalState>((set, get) => ({
         color: '#5b8cff'
       }))
       set((s) => ({ events: [...s.events, ...added], lastSync: Date.now() }))
-      return added.length
+      return { count: added.length, ids }
     }
     if (get().status !== 'authorized') {
       toast.error('Kein Kalenderzugriff.')
-      return 0
+      return { count: 0, ids: [] }
     }
     const id = useSettingsStore.getState().studienplanerCalendarId
     if (!id) {
       toast.error('Erst einen Studium-Kalender wählen (in der Termine-Leiste).')
+      return { count: 0, ids: [] }
+    }
+    const res = await window.api
+      .calAddEvents(id, events)
+      .catch(() => ({ error: 'Fehler' }) as { error: string })
+    if ('error' in res) {
+      toast.error(res.error)
+      return { count: 0, ids: [] }
+    }
+    await get().refresh()
+    return { count: res.count, ids: res.ids }
+  },
+
+  updateEvents: async (events) => {
+    if (!events.length) return 0
+    if (get().demo) {
+      const byId = new Map(events.map((e) => [e.id, e]))
+      set((s) => ({
+        events: s.events.map((ev) => {
+          const u = byId.get(ev.id)
+          return u ? { ...ev, title: u.title, start: u.start, end: u.end, notes: u.notes } : ev
+        }),
+        lastSync: Date.now()
+      }))
+      return events.length
+    }
+    if (get().status !== 'authorized') return 0
+    const id = useSettingsStore.getState().studienplanerCalendarId
+    if (!id) return 0
+    const res = await window.api
+      .calUpdateEvents(id, events)
+      .catch(() => ({ error: 'Fehler' }) as { error: string })
+    if ('error' in res) {
+      toast.error(res.error)
       return 0
     }
-    const res = await window.api.calAddEvents(id, events).catch(() => ({ error: 'Fehler' }))
+    await get().refresh()
+    return res.count
+  },
+
+  deleteEvents: async (eventIds) => {
+    const ids = eventIds.filter(Boolean)
+    if (!ids.length) return 0
+    if (get().demo) {
+      const drop = new Set(ids)
+      set((s) => ({ events: s.events.filter((ev) => !drop.has(ev.id)), lastSync: Date.now() }))
+      return ids.length
+    }
+    if (get().status !== 'authorized') return 0
+    const id = useSettingsStore.getState().studienplanerCalendarId
+    if (!id) return 0
+    const res = await window.api
+      .calDeleteEvents(id, ids)
+      .catch(() => ({ error: 'Fehler' }) as { error: string })
     if ('error' in res) {
       toast.error(res.error)
       return 0

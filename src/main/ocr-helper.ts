@@ -1,10 +1,10 @@
 import { app, ipcMain } from 'electron'
 import { execFile } from 'child_process'
-import { mkdtemp, rm, writeFile } from 'fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'fs/promises'
 import { existsSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import type { OcrResult } from '../shared/types'
+import type { OcrRectifyReport, OcrResult } from '../shared/types'
 
 /**
  * Handschrift-/Text-OCR über einen kleinen, mitgelieferten Swift-Helfer, der
@@ -66,7 +66,55 @@ function runHelper(file: string): Promise<OcrResult | null> {
   })
 }
 
+function runRectify(inFile: string, outFile: string): Promise<OcrRectifyReport | null> {
+  return new Promise((resolve) => {
+    execFile(
+      helperPath(),
+      ['rectify', inFile, outFile],
+      { timeout: 30_000, maxBuffer: 1 << 20 },
+      (err, stdout) => {
+        if (err) {
+          console.warn('astra-ocr rectify fehlgeschlagen:', err.message)
+          resolve(null)
+          return
+        }
+        try {
+          resolve(JSON.parse(stdout) as OcrRectifyReport)
+        } catch {
+          resolve(null)
+        }
+      }
+    )
+  })
+}
+
 export function registerOcrHelper(): void {
+  ipcMain.handle(
+    'ocr:rectify',
+    async (
+      _e,
+      input: { bytes: Uint8Array; ext?: string }
+    ): Promise<{ bytes: Uint8Array; report: OcrRectifyReport } | null> => {
+      if (!isAvailable() || !input.bytes) return null
+      const dir = await mkdtemp(join(tmpdir(), 'astra-rect-'))
+      const ext = (input.ext ?? 'jpg').replace(/[^a-z0-9]/gi, '').toLowerCase() || 'jpg'
+      const inPath = join(dir, `in.${ext}`)
+      const outPath = join(dir, 'out.jpg')
+      try {
+        await writeFile(inPath, Buffer.from(input.bytes))
+        const report = await runRectify(inPath, outPath)
+        if (!report || !report.wrote || !existsSync(outPath)) return null
+        const bytes = new Uint8Array(await readFile(outPath))
+        return { bytes, report }
+      } catch (e) {
+        console.warn('ocr:rectify:', (e as Error).message)
+        return null
+      } finally {
+        await rm(dir, { recursive: true, force: true }).catch(() => undefined)
+      }
+    }
+  )
+
   ipcMain.handle(
     'ocr:recognize',
     async (

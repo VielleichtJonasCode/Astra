@@ -5,6 +5,7 @@ import { Field, FieldGroup, Divider } from '../common/Field'
 import { Segmented, TextInput, Toggle } from '../common/controls'
 import { toast } from '../common/toast'
 import { useSettingsStore, applyTheme } from '../../store/settingsStore'
+import { useStudienplanerStore } from '../../store/studienplanerStore'
 import { clearRecentApps } from '../../lib/recent'
 
 export function SettingsDialog({ onClose }: { onClose: () => void }): JSX.Element {
@@ -14,15 +15,19 @@ export function SettingsDialog({ onClose }: { onClose: () => void }): JSX.Elemen
     pdfZoom,
     autoSign,
     geminiModel,
+    studienplanerPath,
+    widgetsEnabled,
     setTheme,
     setConverterOutputDir,
     setPdfZoom,
     setAutoSign,
-    setGeminiModel
+    setGeminiModel,
+    setWidgetsEnabled
   } = useSettingsStore()
   const [dir, setDir] = useState(converterOutputDir)
   const [geminiKey, setGeminiKey] = useState('')
   const [geminiSaved, setGeminiSaved] = useState(false)
+  const [widgetPath, setWidgetPath] = useState('')
 
   useEffect(() => {
     void window.api.getSecret('geminiApiKey').then((k) => {
@@ -31,6 +36,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }): JSX.Elemen
         setGeminiSaved(true)
       }
     })
+    void window.api.widgetSnapshotPath?.().then(setWidgetPath)
   }, [])
 
   const saveGemini = async (): Promise<void> => {
@@ -158,8 +164,36 @@ export function SettingsDialog({ onClose }: { onClose: () => void }): JSX.Elemen
 
       <Divider horizontal />
 
+      <FieldGroup title="macOS-Widgets">
+        <Field
+          label="Widgets mit Daten versorgen"
+          hint="Schreibt einen kompakten Studienplaner-Schnappschuss (Klausur-Countdown, Notenschnitt, heutiger Plan, Lern-Tipp) für die Widget-Erweiterung. Die Widgets selbst erscheinen erst, wenn Astra signiert gebaut wird – Anleitung: src/native/widgets/README.md."
+        >
+          <Toggle checked={widgetsEnabled} onChange={setWidgetsEnabled} label="Aktiv" />
+        </Field>
+        {widgetPath && (
+          <Field label="Schnappschuss">
+            <code style={{ fontSize: 11, wordBreak: 'break-all', color: 'var(--text-tertiary)' }}>
+              {widgetPath}
+            </code>
+          </Field>
+        )}
+      </FieldGroup>
+
+      <Divider horizontal />
+
       <FieldGroup title="Daten">
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {studienplanerPath && (
+            <Button onClick={() => void useStudienplanerStore.getState().backupNow(false)}>
+              Studienordner jetzt sichern (ZIP)
+            </Button>
+          )}
+          {studienplanerPath && (
+            <Button onClick={() => void useStudienplanerStore.getState().archiveOldExams()}>
+              Alte Fächer archivieren …
+            </Button>
+          )}
           <Button
             onClick={() => {
               clearRecentApps()

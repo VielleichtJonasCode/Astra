@@ -1,7 +1,8 @@
-import { BrowserWindow, ipcMain, shell } from 'electron'
-import { mkdir, readdir, readFile, rename, stat, writeFile } from 'fs/promises'
+import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'fs/promises'
 import { watch, type FSWatcher } from 'fs'
-import { dirname, extname, join } from 'path'
+import { execFile } from 'child_process'
+import { basename, dirname, extname, join } from 'path'
 import type { SpCourse, SpFile, SpSemester, SpTree } from '../shared/types'
 import { seedDemoStudienplaner, type DemoSeedResult } from './studienplanerDemo'
 
@@ -55,12 +56,20 @@ async function subDirs(dir: string): Promise<{ name: string; path: string }[]> {
     .sort((a, b) => a.name.localeCompare(b.name, 'de', { numeric: true }))
 }
 
+/** Unterordner eines Fachs, der die Prüfungsvorbereitung enthält (kein Notiz-Ordner). */
+const PREP_DIR = 'Prüfungsvorbereitung'
+
 async function readTree(root: string): Promise<SpTree> {
   const semesters: SpSemester[] = []
   for (const sem of await subDirs(root)) {
     const courses: SpCourse[] = []
     for (const c of await subDirs(sem.path)) {
-      courses.push({ name: c.name, path: c.path, files: await listFiles(c.path) })
+      const groups = []
+      for (const g of await subDirs(c.path)) {
+        if (g.name === PREP_DIR) continue
+        groups.push({ name: g.name, path: g.path, files: await listFiles(g.path) })
+      }
+      courses.push({ name: c.name, path: c.path, files: await listFiles(c.path), groups })
     }
     semesters.push({
       name: sem.name,
@@ -101,6 +110,32 @@ export function registerStudienplaner(getWindow: () => BrowserWindow | null): vo
   ipcMain.handle('sp:exists', async (_e, path: string): Promise<boolean> => {
     return (await safeStat(path)) !== null
   })
+
+  // Ein einziges ZIP-Backup des Studienordners (altes wird ersetzt).
+  ipcMain.handle(
+    'sp:backup',
+    async (
+      _e,
+      root: string
+    ): Promise<{ path: string; bytes: number; when: number } | { error: string }> => {
+      try {
+        const dest = join(app.getPath('userData'), 'Studienplaner-Backup.zip')
+        await rm(dest, { force: true })
+        await new Promise<void>((res, rej) => {
+          execFile(
+            '/usr/bin/zip',
+            ['-r', '-q', '-X', dest, basename(root), '-x', '.DS_Store', '-x', '*/.DS_Store'],
+            { cwd: dirname(root), maxBuffer: 1 << 26 },
+            (err) => (err ? rej(err) : res())
+          )
+        })
+        const st = await stat(dest)
+        return { path: dest, bytes: st.size, when: Date.now() }
+      } catch (e) {
+        return { error: e instanceof Error ? e.message : String(e) }
+      }
+    }
+  )
 
   ipcMain.handle('sp:seedDemo', (_e, opts?: { reset?: boolean }): Promise<DemoSeedResult> =>
     seedDemoStudienplaner(Boolean(opts?.reset))

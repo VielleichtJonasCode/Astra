@@ -129,9 +129,10 @@ export function App(): JSX.Element {
         })
       )
     })
-    // Menüleisten-„Heute"-Menü verzögert starten, damit der Start schlank bleibt.
+    // Menüleisten-„Heute"-Menü + Widget-Daten verzögert starten (schlanker Start).
     const trayT = setTimeout(() => {
       void import('./lib/traySync').then((m) => m.startTraySync())
+      void import('./lib/widgetSync').then((m) => m.startWidgetSync())
     }, 2000)
     offs.push(() => clearTimeout(trayT))
 

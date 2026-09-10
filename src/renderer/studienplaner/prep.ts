@@ -31,6 +31,41 @@ export interface QuizItem {
   topic?: string
 }
 
+/** Eine Nachricht im „Fragen"-Dialog eines Fachs (Nutzerfrage oder KI-Antwort). */
+export interface ChatMessage {
+  /** Stabile ID – für den iCloud-Merge (Handy ↔ Mac). */
+  id: string
+  role: 'user' | 'model'
+  text: string
+  /** ISO-Zeitpunkt – Sortierung und Merge. */
+  at: string
+}
+
+/** So viele Dialog-Nachrichten je Fach werden aufbewahrt (älteste fallen weg). */
+export const CHAT_LIMIT = 40
+
+/** Auf die jüngsten `CHAT_LIMIT` Nachrichten kürzen. */
+export function trimChat(list: ChatMessage[]): ChatMessage[] {
+  return list.length > CHAT_LIMIT ? list.slice(list.length - CHAT_LIMIT) : list
+}
+
+/**
+ * Den Q&A-Verlauf zweier Geräte vereinen: nach `id` zusammenführen (bei Kollision
+ * gewinnt der neuere Zeitstempel), nach Zeitstempel sortiert, auf `CHAT_LIMIT`
+ * gekürzt. Bei gleichem Zeitstempel bleibt die Eingangsreihenfolge erhalten
+ * (Frage-vor-Antwort), weil ein Q/A-Paar immer auf demselben Gerät entsteht und
+ * `Array.prototype.sort` stabil ist.
+ */
+export function mergeChat(a?: ChatMessage[] | null, b?: ChatMessage[] | null): ChatMessage[] {
+  const byId = new Map<string, ChatMessage>()
+  for (const m of [...(a ?? []), ...(b ?? [])]) {
+    if (!m || !m.id || (m.role !== 'user' && m.role !== 'model')) continue
+    const prev = byId.get(m.id)
+    if (!prev || String(m.at) > String(prev.at)) byId.set(m.id, m)
+  }
+  return trimChat([...byId.values()].sort((x, y) => String(x.at).localeCompare(String(y.at))))
+}
+
 export interface QuizProgress {
   /** Anzahl Antworten. */
   seen: number
@@ -65,6 +100,66 @@ export interface PlanTask {
   done?: boolean
   /** ISO-Zeitpunkt der letzten Abhak-Änderung – für den iCloud-Merge (Handy ↔ Mac). */
   doneAt?: string
+  /** Vom Nutzer selbst angelegt (nicht von der KI). */
+  manual?: boolean
+  /** Freitext-Notiz zur Aufgabe. */
+  note?: string
+  /** Verknüpfte Notizen (relPath im Studienordner). */
+  attachments?: string[]
+  /** Eigenes Ergebnis: wie viele Aufgaben/Fragen richtig von wie vielen. */
+  score?: { correct: number; total: number }
+  /** EventKit-ID des Kalendertermins für diese Aufgabe (für die Zwei-Wege-Sync). */
+  calEventId?: string
+}
+
+/** Richtig-Anteil (0…1) eines Aufgaben-Ergebnisses, oder null wenn nichts erfasst. */
+export function taskScorePct(score?: { correct: number; total: number } | null): number | null {
+  if (!score || !(score.total > 0)) return null
+  return Math.max(0, Math.min(1, score.correct / score.total))
+}
+
+/**
+ * Beim Übernehmen eines überarbeiteten Lernplan-Entwurfs den Erledigt-Status
+ * (und ein erfasstes Ergebnis) der alten Aufgaben per Titel auf die neuen
+ * übertragen – damit bereits geschaffter Fortschritt nicht verloren geht.
+ */
+export function carryDoneByTitle(prev: PlanTask[], next: PlanTask[]): PlanTask[] {
+  const norm = (s: string): string => s.trim().toLowerCase()
+  const done = new Map<string, { doneAt?: string; score?: PlanTask['score'] }>()
+  for (const t of prev) {
+    if (t.done) done.set(norm(t.title), { doneAt: t.doneAt, score: t.score })
+  }
+  return next.map((t) => {
+    const c = done.get(norm(t.title))
+    return c ? { ...t, done: true, doneAt: c.doneAt, ...(c.score ? { score: c.score } : {}) } : t
+  })
+}
+
+/** Uhrzeit einer Aufgabe als sauberes „HH:MM" (Standard 16:00 bei leerer/kaputter Angabe). */
+export function taskTimeHHMM(t: Pick<PlanTask, 'time'>): string {
+  const raw = (t.time ?? '').trim()
+  return /^\d{1,2}:\d{2}$/.test(raw) ? raw.padStart(5, '0') : '16:00'
+}
+
+/** Start-Zeitpunkt (ms) einer Aufgabe in Ortszeit; `NaN`-sicher. */
+export function taskStartMs(t: Pick<PlanTask, 'date' | 'time'>): number {
+  const ms = new Date(`${t.date}T${taskTimeHHMM(t)}:00`).getTime()
+  return Number.isNaN(ms) ? 0 : ms
+}
+
+/** Kalender-Termin-Nutzlast einer Lernplan-Aufgabe (Titel „📚 …", Zeitfenster, Notiz). */
+export function taskCalendarEvent(
+  kursName: string,
+  t: PlanTask
+): { title: string; start: string; end: string; notes: string } {
+  const start = taskStartMs(t) || Date.now()
+  const mins = Number.isFinite(t.minutes) && t.minutes > 0 ? t.minutes : 60
+  return {
+    title: `📚 ${t.title}`,
+    start: new Date(start).toISOString(),
+    end: new Date(start + mins * 60000).toISOString(),
+    notes: `Lernplan „${kursName}"${t.topic ? ` · ${t.topic}` : ''}`
+  }
 }
 
 /**
@@ -93,6 +188,8 @@ export interface Lernplan {
   plannedAt?: string | null
   /** Quizze dieses Lernplans. */
   quizzes: Quiz[]
+  /** „Fragen"-Dialog zu diesem Fach (bleibt erhalten, synct über iCloud). */
+  chat?: ChatMessage[]
   /** Fortschritt je Frage-ID (über alle Quizze des Plans). */
   progress: Record<string, QuizProgress>
   /** Material: Video-/Web-Links. */
@@ -117,6 +214,12 @@ export interface LernplanMeta {
   answered: number
   /** 0…1 – Anteil „sicher“ beantworteter Fragen. */
   progress: number
+  /** 0…1 – Gesamt-Trefferquote (Quiz + eigene Aufgaben-Ergebnisse). */
+  correctRate: number
+  /** Anzahl bewerteter Einheiten (Quiz-Antworten + Aufgaben mit Ergebnis). */
+  gradedCount: number
+  /** Davon richtig. */
+  correctCount: number
   hasSummary: boolean
   hasPlan: boolean
   resourceCount: number
@@ -166,6 +269,7 @@ export function emptyLernplan(semester: string, kurs: string): Lernplan {
     planTasks: [],
     plannedAt: null,
     quizzes: [],
+    chat: [],
     progress: {},
     created: now,
     updated: now
@@ -218,11 +322,39 @@ export function parseLernplan(raw: string | null, fallbackName = 'Lernplan'): Le
           minutes: Number(t.minutes) || 60,
           kind: t.kind,
           done: Boolean(t.done),
-          doneAt: typeof t.doneAt === 'string' ? t.doneAt : undefined
+          doneAt: typeof t.doneAt === 'string' ? t.doneAt : undefined,
+          manual: Boolean(t.manual),
+          note: typeof t.note === 'string' ? t.note : undefined,
+          attachments: Array.isArray(t.attachments)
+            ? (t.attachments as unknown[]).filter((x): x is string => typeof x === 'string')
+            : undefined,
+          score:
+            t.score && Number(t.score.total) > 0
+              ? {
+                  correct: Math.max(
+                    0,
+                    Math.min(Number(t.score.total), Math.round(Number(t.score.correct) || 0))
+                  ),
+                  total: Math.round(Number(t.score.total))
+                }
+              : undefined,
+          calEventId: typeof t.calEventId === 'string' && t.calEventId ? t.calEventId : undefined
         }))
       : [],
     plannedAt: (p.plannedAt as string) ?? null,
     quizzes,
+    chat: Array.isArray(p.chat)
+      ? (p.chat as Partial<ChatMessage>[])
+          .filter(
+            (m) => m && (m.role === 'user' || m.role === 'model') && typeof m.text === 'string'
+          )
+          .map((m, i) => ({
+            id: typeof m.id === 'string' && m.id ? m.id : `m${i}-${nanoid(4)}`,
+            role: m.role as 'user' | 'model',
+            text: String(m.text),
+            at: typeof m.at === 'string' && m.at ? m.at : now
+          }))
+      : [],
     progress: (p.progress as Record<string, QuizProgress>) ?? {},
     resources: Array.isArray(p.resources)
       ? (p.resources as LernResource[]).filter((r) => r && r.url)
@@ -244,6 +376,9 @@ export function lernplanMeta(semester: string, kurs: string, plan: Lernplan | nu
       questionCount: 0,
       answered: 0,
       progress: 0,
+      correctRate: 0,
+      gradedCount: 0,
+      correctCount: 0,
       hasSummary: false,
       hasPlan: false,
       resourceCount: 0,
@@ -268,6 +403,9 @@ export function lernplanMeta(semester: string, kurs: string, plan: Lernplan | nu
     questionCount: perf.total,
     answered: perf.answered,
     progress: perf.answered > 0 ? perf.correct / Math.max(perf.total, perf.answered) : 0,
+    correctRate: perf.overallAccuracy,
+    gradedCount: perf.overallTotal,
+    correctCount: perf.overallCorrect,
     hasSummary: Boolean(plan.summary.trim()),
     hasPlan: Boolean(plan.plan.trim()),
     resourceCount: plan.resources?.length ?? 0,
@@ -313,12 +451,25 @@ export function mergeProgress(a: Lernplan, b: Lernplan): Lernplan {
   }
   for (const t of a.planTasks ?? []) consider(t)
   for (const t of b.planTasks ?? []) consider(t)
+  // Kalender-Verknüpfung nie verlieren: das Handy kennt `calEventId` nicht, also
+  // aus der jeweils anderen Seite übernehmen, wenn `base` sie nicht hat.
+  const calIdOf = new Map<string, string>()
+  for (const t of other.planTasks ?? []) if (t.id && t.calEventId) calIdOf.set(t.id, t.calEventId)
   const planTasks = (base.planTasks ?? []).map((t) => {
     const s = doneOf.get(t.id)
-    if (!s || (s.done === Boolean(t.done) && (!s.at || s.at === (t.doneAt ?? '')))) return t
-    return { ...t, done: s.done, doneAt: s.at || t.doneAt }
+    const calEventId = t.calEventId ?? calIdOf.get(t.id)
+    const doneChanged = s && !(s.done === Boolean(t.done) && (!s.at || s.at === (t.doneAt ?? '')))
+    if (!doneChanged && calEventId === t.calEventId) return t
+    return {
+      ...t,
+      calEventId,
+      ...(doneChanged ? { done: s!.done, doneAt: s!.at || t.doneAt } : {})
+    }
   })
-  return { ...base, progress, planTasks }
+  // Der „Fragen"-Dialog wird nach id vereint, damit keine Frage/Antwort verloren
+  // geht, egal auf welchem Gerät sie gestellt wurde.
+  const chat = mergeChat(a.chat, b.chat)
+  return { ...base, progress, planTasks, chat }
 }
 
 export function getExamLink(index: IndexData, examKey: string): ExamLink | null {
@@ -408,12 +559,24 @@ export interface PerfSummary {
   total: number
   answered: number
   correct: number
+  /** Quiz-Trefferquote (0…1). */
   accuracy: number
   byTopic: TopicPerf[]
   /** IDs der wackeligen Fragen (falsch beim letzten Mal oder < 50 % richtig). */
   weakItemIds: string[]
   /** Es gibt genug Daten für adaptive Vorschläge. */
   hasData: boolean
+  /** Aus den eigenen Aufgaben-Ergebnissen: richtig / gesamt / Anzahl bewerteter Aufgaben. */
+  taskCorrect: number
+  taskTotal: number
+  taskScored: number
+  /** Quiz + Aufgaben-Ergebnisse zusammen. */
+  overallCorrect: number
+  overallTotal: number
+  /** Gesamt-Trefferquote (0…1). */
+  overallAccuracy: number
+  /** Gesamt-Fehlerquote (0…1). */
+  wrongPct: number
 }
 
 /** Wertet den Quiz-Fortschritt eines Lernpakets aus. */
@@ -456,6 +619,22 @@ export function analyzeProgress(pack: Lernplan): PerfSummary {
     })
     .sort((a, b) => a.mastery - b.mastery)
 
+  // Eigene Aufgaben-Ergebnisse dazurechnen.
+  let taskCorrect = 0
+  let taskTotal = 0
+  let taskScored = 0
+  for (const t of pack.planTasks ?? []) {
+    if (t.score && t.score.total > 0) {
+      taskScored += 1
+      taskCorrect += Math.max(0, Math.min(t.score.total, t.score.correct))
+      taskTotal += t.score.total
+    }
+  }
+
+  const overallCorrect = correct + taskCorrect
+  const overallTotal = answered + taskTotal
+  const overallAccuracy = overallTotal > 0 ? overallCorrect / overallTotal : 0
+
   return {
     total,
     answered,
@@ -463,21 +642,43 @@ export function analyzeProgress(pack: Lernplan): PerfSummary {
     accuracy: answered > 0 ? correct / answered : 0,
     byTopic,
     weakItemIds,
-    hasData: answered >= 3
+    hasData: answered >= 3,
+    taskCorrect,
+    taskTotal,
+    taskScored,
+    overallCorrect,
+    overallTotal,
+    overallAccuracy,
+    wrongPct: overallTotal > 0 ? 1 - overallAccuracy : 0
   }
 }
 
 /** Formatiert die Leistung als Kontext für die KI. */
 export function perfPromptText(perf: PerfSummary, weakQuestions: string[] = []): string {
-  if (!perf.hasData) return ''
-  const lines = [
-    `Gesamt: ${perf.answered} von ${perf.total} Fragen beantwortet, ${Math.round(perf.accuracy * 100)} % richtig.`,
-    'Themen (Sicherheit):'
-  ]
-  for (const t of perf.byTopic) {
+  if (!perf.hasData && perf.taskScored === 0) return ''
+  const lines: string[] = []
+  if (perf.overallTotal > 0) {
     lines.push(
-      `- ${t.topic}: ${Math.round(t.mastery * 100)} %${t.weak ? ' (SCHWACH – mehr Zeit + Wiederholung einplanen)' : ''}`
+      `Gesamt-Trefferquote: ${Math.round(perf.overallAccuracy * 100)} % richtig ` +
+        `(${Math.round(perf.wrongPct * 100)} % falsch), ${perf.overallCorrect}/${perf.overallTotal} korrekt.`
     )
+  }
+  if (perf.answered > 0) {
+    lines.push(
+      `Quiz: ${perf.answered}/${perf.total} beantwortet, ${Math.round(perf.accuracy * 100)} % richtig.`
+    )
+  }
+  if (perf.taskScored > 0) {
+    lines.push(`Eigene Aufgaben-Ergebnisse: ${perf.taskCorrect}/${perf.taskTotal} richtig.`)
+  }
+  if (perf.byTopic.some((t) => t.seen > 0)) {
+    lines.push('Themen (Sicherheit):')
+    for (const t of perf.byTopic) {
+      if (t.seen === 0) continue
+      lines.push(
+        `- ${t.topic}: ${Math.round(t.mastery * 100)} %${t.weak ? ' (SCHWACH – mehr Zeit + Wiederholung einplanen)' : ''}`
+      )
+    }
   }
   if (weakQuestions.length) {
     lines.push('Wackelige Fragen:', ...weakQuestions.slice(0, 15).map((q) => `- ${q}`))
@@ -490,4 +691,25 @@ export function weakQuiz(pack: Lernplan, ids: string[]): Quiz {
   const set = new Set(ids)
   const items = pack.quizzes.flatMap((q) => q.items).filter((it) => set.has(it.id))
   return { id: 'weak', name: 'Wackelige Fragen', created: new Date().toISOString(), items }
+}
+
+/** Trefferquote eines einzelnen Quiz: beantwortete Fragen, davon richtig, in %. */
+export function quizStats(
+  pack: Lernplan,
+  quiz: Quiz
+): { answered: number; total: number; correct: number; pct: number | null } {
+  let answered = 0
+  let correct = 0
+  for (const it of quiz.items) {
+    const p = pack.progress[it.id]
+    if (!p) continue
+    answered += 1
+    if (p.correct > 0 && p.lastCorrect) correct += 1
+  }
+  return {
+    answered,
+    total: quiz.items.length,
+    correct,
+    pct: answered > 0 ? correct / answered : null
+  }
 }

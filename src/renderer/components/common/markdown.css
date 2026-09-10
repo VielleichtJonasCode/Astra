@@ -1,0 +1,49 @@
+/* Gerendertes Markdown (KI-Antworten, Zusammenfassungen, Auswertungen). */
+.md {
+  font-size: var(--fs-13);
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+.md h1,
+.md h2,
+.md h3 {
+  font-size: var(--fs-13);
+  font-weight: var(--fw-semibold);
+  margin: 1.1em 0 0.4em;
+}
+.md h1 {
+  font-size: var(--fs-16);
+}
+.md ul,
+.md ol {
+  padding-left: 1.3em;
+  margin: 0.4em 0;
+}
+.md li {
+  margin: 0.2em 0;
+}
+.md code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--bg-hover);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.md pre {
+  background: var(--bg-hover);
+  padding: 10px;
+  border-radius: var(--r-md);
+  overflow-x: auto;
+}
+.md table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.6em 0;
+  font-size: var(--fs-12);
+}
+.md th,
+.md td {
+  border: 1px solid var(--border-inset);
+  padding: 5px 8px;
+  text-align: left;
+}

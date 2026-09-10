@@ -38,6 +38,7 @@ const api: PdfStudioApi = {
   spListDir: (path) => ipcRenderer.invoke('sp:listdir', path),
   spRead: (path) => ipcRenderer.invoke('sp:read', path),
   spExists: (path) => ipcRenderer.invoke('sp:exists', path),
+  spBackup: (root) => ipcRenderer.invoke('sp:backup', root),
   spSeedDemo: (opts) => ipcRenderer.invoke('sp:seedDemo', opts),
   spWrite: (path, bytes) => ipcRenderer.invoke('sp:write', path, bytes),
   spMkdirp: (path) => ipcRenderer.invoke('sp:mkdirp', path),
@@ -53,6 +54,7 @@ const api: PdfStudioApi = {
   },
 
   ocrRecognize: (input) => ipcRenderer.invoke('ocr:recognize', input),
+  ocrRectify: (input) => ipcRenderer.invoke('ocr:rectify', input),
 
   calStatus: () => ipcRenderer.invoke('cal:status'),
   calRequestAccess: () => ipcRenderer.invoke('cal:request'),
@@ -61,6 +63,8 @@ const api: PdfStudioApi = {
     ipcRenderer.invoke('cal:events', fromIso, toIso, calendarIds),
   calCreateCalendar: (title) => ipcRenderer.invoke('cal:create', title),
   calAddEvents: (calendarId, events) => ipcRenderer.invoke('cal:add', calendarId, events),
+  calUpdateEvents: (calendarId, events) => ipcRenderer.invoke('cal:update', calendarId, events),
+  calDeleteEvents: (calendarId, eventIds) => ipcRenderer.invoke('cal:delete', calendarId, eventIds),
 
   llmHasKey: () => ipcRenderer.invoke('llm:hasKey'),
   llmGenerate: (req) => ipcRenderer.invoke('llm:generate', req),
@@ -75,7 +79,10 @@ const api: PdfStudioApi = {
     const listener = (_e: unknown, v: string): void => cb(v)
     ipcRenderer.on('shell:set-view', listener)
     return () => ipcRenderer.removeListener('shell:set-view', listener)
-  }
+  },
+
+  widgetPush: (snapshot) => ipcRenderer.send('widget:push', snapshot),
+  widgetSnapshotPath: () => ipcRenderer.invoke('widget:snapshotPath')
 }
 
 contextBridge.exposeInMainWorld('api', api)

@@ -1,0 +1,171 @@
+.exd {
+  padding: var(--sp-4) var(--sp-5) var(--sp-6);
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.exd__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.exd__title {
+  flex: 1;
+  min-width: 0;
+}
+.exd__title h2 {
+  margin: 0;
+  font-size: var(--fs-18);
+  line-height: 1.2;
+}
+.exd__title span {
+  font-size: var(--fs-12);
+  color: var(--text-tertiary);
+}
+.exd__count {
+  flex: 0 0 auto;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: var(--fs-12);
+  font-weight: var(--fw-semibold);
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+.exd__count.is-soon {
+  background: color-mix(in srgb, var(--warning, #d98324) 18%, transparent);
+  color: var(--warning, #d98324);
+}
+.exd__count.is-past {
+  opacity: 0.7;
+}
+.exd__card {
+  border: 1px solid var(--border-inset);
+  border-radius: var(--r-md);
+  background: var(--bg-content);
+  padding: 12px 14px;
+}
+.exd__card--load {
+  display: flex;
+  justify-content: center;
+  padding: 28px;
+}
+.exd__card h3 {
+  margin: 0 0 8px;
+  font-size: var(--fs-12);
+  font-weight: var(--fw-semibold);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.exd__muted {
+  font-size: var(--fs-12);
+  color: var(--text-tertiary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.exd__grade {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.exd__gradenum {
+  font-size: 44px;
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.exd__grademeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--fs-12);
+  color: var(--text-tertiary);
+}
+.exd__grademeta strong {
+  color: var(--text-primary);
+  font-size: var(--fs-13);
+}
+
+.exd__comps,
+.exd__prep,
+.exd__topics {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.exd__comp {
+  display: grid;
+  grid-template-columns: 1fr auto 48px;
+  gap: 10px;
+  font-size: var(--fs-12);
+}
+.exd__compval {
+  color: var(--text-secondary);
+}
+.exd__compw {
+  text-align: right;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+.exd__prow {
+  display: grid;
+  grid-template-columns: 1fr 120px auto;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-12);
+}
+.exd__pbar,
+.exd__tbar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-hover);
+  overflow: hidden;
+}
+.exd__pbar i,
+.exd__tbar i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+}
+.exd__tbar.is-weak i {
+  background: var(--warning, #d98324);
+}
+
+.exd__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  text-align: center;
+}
+.exd__stat strong {
+  display: block;
+  font-size: var(--fs-18);
+  font-variant-numeric: tabular-nums;
+}
+.exd__stat span {
+  font-size: var(--fs-10);
+  color: var(--text-tertiary);
+}
+
+.exd__topic {
+  display: grid;
+  grid-template-columns: 1fr 100px 44px;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-12);
+}
+.exd__tval {
+  text-align: right;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.exd__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

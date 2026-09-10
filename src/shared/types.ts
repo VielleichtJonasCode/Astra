@@ -30,10 +30,20 @@ export interface SpFile {
   modified: number
 }
 
-export interface SpCourse {
+export interface SpFolderGroup {
+  /** Ordnername, z. B. "Informationen" oder "Übungen". */
   name: string
   path: string
   files: SpFile[]
+}
+
+export interface SpCourse {
+  name: string
+  path: string
+  /** Lose Dateien direkt im Kurs-Ordner (Altbestand / noch nicht zugeordnet). */
+  files: SpFile[]
+  /** Unterordner des Kurses (Informationen, Übungen, …) ohne „Prüfungsvorbereitung". */
+  groups?: SpFolderGroup[]
 }
 
 export interface SpSemester {
@@ -75,6 +85,22 @@ export interface OcrResult {
   /** Gesamttext aller Seiten, mit "\n\n" verbunden. */
   text: string
   engine: 'vision' | 'tesseract'
+}
+
+/** Bericht der Scan-Aufbereitung (`astra-ocr rectify`). */
+export interface OcrRectifyReport {
+  /** Wurde eine aufbereitete Datei geschrieben? */
+  wrote: boolean
+  /** Wurde überhaupt ein Blatt-Viereck erkannt? */
+  detected: boolean
+  /** Flächenanteil des Blatts am Bild (0…1). */
+  coverage: number
+  /** Varianz des Laplace-Operators – klein = unscharf. */
+  blur: number
+  /** 8×8-Average-Hash (16 Hex) des aufbereiteten Bilds – für Duplikat-Erkennung. */
+  ahash: string
+  /** Grober Grund, falls die Aufbereitung nicht sauber war (z. B. „kein Blatt erkannt"). */
+  reason?: string | null
 }
 
 /* ── Kalender (EventKit-Helfer) ────────────────────────────────────────── */
@@ -257,6 +283,8 @@ export interface PdfStudioApi {
   spRead(path: string): Promise<Uint8Array>
   /** Prüft, ob eine Datei/ein Ordner existiert – ohne einen Lesefehler zu werfen. */
   spExists(path: string): Promise<boolean>
+  /** Erstellt EIN ZIP-Backup des Studienordners (altes wird ersetzt). */
+  spBackup(root: string): Promise<{ path: string; bytes: number; when: number } | { error: string }>
   /**
    * Legt einen Beispiel-Studienordner an (Demo-Modus) und gibt seinen Pfad plus
    * Fake-Kalendertermine zurück. `reset` baut ihn komplett neu.
@@ -287,6 +315,12 @@ export interface PdfStudioApi {
     bytes?: Uint8Array
     ext?: string
   }): Promise<OcrResult | null>
+  /** Begradigt & säubert ein Scan-Bild (Perspektivkorrektur, Kontrast) und meldet
+   *  Qualitätskennzahlen. `null`, wenn der Helfer fehlt oder es kein Bild ist. */
+  ocrRectify(input: {
+    bytes: Uint8Array
+    ext?: string
+  }): Promise<{ bytes: Uint8Array; report: OcrRectifyReport } | null>
 
   /* ── Kalender ───────────────────────────────────────────────────────── */
   /** Aktueller Berechtigungsstatus für den Kalenderzugriff. */
@@ -299,10 +333,21 @@ export interface PdfStudioApi {
   calEvents(fromIso: string, toIso: string, calendarIds?: string[]): Promise<CalEvent[]>
   /** Legt einen neuen Ereignis-Kalender in iCloud an; null bei Fehler. */
   calCreateCalendar(title: string): Promise<CalCalendar | null>
-  /** Trägt Termine in den Kalender `calendarId` ein; gibt die Anzahl zurück. */
+  /** Trägt Termine in den Kalender `calendarId` ein; gibt Anzahl + die neuen
+   *  Event-IDs (Reihenfolge wie `events`, "" wenn ein Eintrag scheiterte) zurück. */
   calAddEvents(
     calendarId: string,
     events: { title: string; start: string; end: string; notes?: string }[]
+  ): Promise<{ count: number; ids: string[] } | { error: string }>
+  /** Aktualisiert vorhandene Termine (per Event-ID) im Kalender `calendarId`. */
+  calUpdateEvents(
+    calendarId: string,
+    events: { id: string; title: string; start: string; end: string; notes?: string }[]
+  ): Promise<{ count: number } | { error: string }>
+  /** Löscht Termine (per Event-ID) aus dem Kalender `calendarId`. */
+  calDeleteEvents(
+    calendarId: string,
+    eventIds: string[]
   ): Promise<{ count: number } | { error: string }>
 
   /* ── KI (Gemini) ───────────────────────────────────────────────────── */
@@ -324,6 +369,16 @@ export interface PdfStudioApi {
   onTrayToggleTask(cb: (t: { semester: string; kurs: string; id: string }) => void): () => void
   /** Menüleiste/Menü: zu einem Werkzeug wechseln (und Fenster zeigen). */
   onShellSetView(cb: (view: string) => void): () => void
+
+  /* ── macOS-Widgets ────────────────────────────────────────────────── */
+  /**
+   * Übergibt den aktuellen Studienplaner-Schnappschuss an den Hauptprozess, der
+   * ihn als JSON für die WidgetKit-Erweiterung ablegt. `snapshot` ist ein
+   * `WidgetSnapshot` (siehe renderer/studienplaner/widget.ts).
+   */
+  widgetPush(snapshot: unknown): void
+  /** Wohin der Schnappschuss geschrieben wird (für die Einstellungen-Anzeige). */
+  widgetSnapshotPath(): Promise<string>
 }
 
 declare global {

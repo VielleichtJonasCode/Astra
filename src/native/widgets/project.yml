@@ -1,0 +1,45 @@
+# XcodeGen-Spezifikation für die Astra-Widget-Erweiterung.
+#   brew install xcodegen
+#   cd src/native/widgets && xcodegen generate
+# Danach `AstraWidgets.xcodeproj` öffnen oder `npm run widgets` bauen.
+
+name: AstraWidgets
+options:
+  bundleIdPrefix: com.jonathanweidner.astra
+  deploymentTarget:
+    macOS: '14.0'
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: '5.9'
+    MARKETING_VERSION: '0.1.0'
+    CURRENT_PROJECT_VERSION: '1'
+    GENERATE_INFOPLIST_FILE: NO
+    CODE_SIGN_STYLE: Automatic
+    # Team-ID hier eintragen oder per `xcodegen generate --spec` / CI setzen:
+    DEVELOPMENT_TEAM: ''
+    ENABLE_HARDENED_RUNTIME: YES
+
+targets:
+  AstraWidgets:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: Sources/AstraWidgets
+    settings:
+      base:
+        PRODUCT_NAME: AstraWidgets
+        PRODUCT_BUNDLE_IDENTIFIER: com.jonathanweidner.astra.AstraWidgets
+        INFOPLIST_FILE: Info.plist
+        CODE_SIGN_ENTITLEMENTS: AstraWidgets.entitlements
+        SKIP_INSTALL: NO
+    dependencies:
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
+
+schemes:
+  AstraWidgets:
+    build:
+      targets:
+        AstraWidgets: all

@@ -20,6 +20,10 @@ interface SettingsState {
   studienplanerDemo: boolean
   /** Echter Studien-Ordner, gemerkt während Demo-Modus. */
   studienplanerPathReal: string | null
+  /** Zeitpunkt des letzten ZIP-Backups (ms). 0 = noch nie. */
+  studienplanerLastBackup: number
+  /** macOS-Widgets mit Studienplaner-Daten versorgen (Standard an). */
+  widgetsEnabled: boolean
   setTheme: (t: ThemePref) => void
   setConverterOutputDir: (dir: string | null) => void
   setPdfZoom: (z: ZoomPref) => void
@@ -27,6 +31,8 @@ interface SettingsState {
   setStudienplanerPath: (dir: string | null) => void
   setStudienplanerCalendarId: (id: string | null) => void
   setGeminiModel: (m: string) => void
+  setStudienplanerLastBackup: (ms: number) => void
+  setWidgetsEnabled: (v: boolean) => void
   /** In den Demo-Modus wechseln: aktuellen Ordner merken, auf `demoPath` zeigen. */
   enterStudienplanerDemo: (demoPath: string) => void
   /** Demo-Modus verlassen: auf den echten Ordner zurückstellen (kann null sein). */
@@ -45,6 +51,8 @@ type Persisted = Pick<
   | 'geminiModel'
   | 'studienplanerDemo'
   | 'studienplanerPathReal'
+  | 'studienplanerLastBackup'
+  | 'widgetsEnabled'
 >
 
 function load(): Persisted {
@@ -63,7 +71,9 @@ function load(): Persisted {
           : null),
       geminiModel: typeof raw.geminiModel === 'string' ? raw.geminiModel : '',
       studienplanerDemo: Boolean(raw.studienplanerDemo),
-      studienplanerPathReal: raw.studienplanerPathReal ?? null
+      studienplanerPathReal: raw.studienplanerPathReal ?? null,
+      studienplanerLastBackup: Number(raw.studienplanerLastBackup) || 0,
+      widgetsEnabled: raw.widgetsEnabled !== false
     }
   } catch {
     return {
@@ -75,7 +85,9 @@ function load(): Persisted {
       studienplanerCalendarId: null,
       geminiModel: '',
       studienplanerDemo: false,
-      studienplanerPathReal: null
+      studienplanerPathReal: null,
+      studienplanerLastBackup: 0,
+      widgetsEnabled: true
     }
   }
 }
@@ -93,7 +105,9 @@ function persist(s: SettingsState): void {
         studienplanerCalendarId: s.studienplanerCalendarId,
         geminiModel: s.geminiModel,
         studienplanerDemo: s.studienplanerDemo,
-        studienplanerPathReal: s.studienplanerPathReal
+        studienplanerPathReal: s.studienplanerPathReal,
+        studienplanerLastBackup: s.studienplanerLastBackup,
+        widgetsEnabled: s.widgetsEnabled
       })
     )
   } catch {
@@ -129,6 +143,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
   setGeminiModel: (geminiModel) => {
     set({ geminiModel })
+    persist(get())
+  },
+  setStudienplanerLastBackup: (studienplanerLastBackup) => {
+    set({ studienplanerLastBackup })
+    persist(get())
+  },
+  setWidgetsEnabled: (widgetsEnabled) => {
+    set({ widgetsEnabled })
     persist(get())
   },
   enterStudienplanerDemo: (demoPath) => {
