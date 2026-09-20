@@ -74,6 +74,8 @@ interface DocState {
 
   // Annotationen
   addAnnotation: (key: string, annotation: Annotation) => void
+  /** Mehrere Objekte in einem Schritt einfügen (z. B. Einfügen aus der Zwischenablage). */
+  addAnnotations: (key: string, annotations: Annotation[]) => void
   updateAnnotation: (
     key: string,
     id: AnnotationId,
@@ -409,6 +411,18 @@ export const useDocStore = create<DocState>((set, get) => ({
       'Objekt hinzufügen',
       (d) => {
         ;(d.annotations[annotation.pageId] ??= []).push(annotation)
+      },
+      { structural: false }
+    ),
+
+  addAnnotations: (key, annotations) =>
+    get().mutate(
+      key,
+      annotations.length > 1 ? 'Objekte einfügen' : 'Objekt einfügen',
+      (d) => {
+        for (const annotation of annotations) {
+          ;(d.annotations[annotation.pageId] ??= []).push(annotation)
+        }
       },
       { structural: false }
     ),

@@ -116,6 +116,10 @@ interface SpState {
   fileFromHint: (file: SpFile, mode?: 'file' | 'append') => Promise<void>
   createSemester: (name: string) => Promise<void>
   createCourse: (semester: string, name: string) => Promise<void>
+  /** Verschiebt ein ganzes Semester (alle Kurse, Dateien) in den Papierkorb. */
+  deleteSemester: (semester: string) => Promise<void>
+  /** Verschiebt einen Kurs (alle Dateien) in den Papierkorb. */
+  deleteCourse: (semester: string, kurs: string) => Promise<void>
   /** Erstellt ein ZIP-Backup des Studienordners (`silent` = ohne Toast). */
   backupNow: (silent?: boolean) => Promise<void>
   /** OCR + Index für Notiz-Dateien nachziehen, die noch keinen Index-Eintrag haben. */
@@ -199,7 +203,12 @@ interface SpState {
   saveExamResult: (
     semester: string,
     kurs: string,
-    input: { components: GradeComponent[]; ects?: number; archive?: boolean }
+    input: {
+      components: GradeComponent[]
+      ects?: number
+      archive?: boolean
+      excludeFromGpa?: boolean
+    }
   ) => Promise<void>
   /** KI-Lernstrategie-Auswertung im Index ablegen (Studienergebnisse-Seite). */
   saveTacticsAnalysis: (text: string) => Promise<void>
@@ -403,6 +412,58 @@ export const useStudienplanerStore = create<SpState>((set, get) => ({
       await window.api.spMkdirp(joinPath(courseDir, sub)).catch(() => undefined)
     }
     await get().refresh()
+  },
+
+  deleteSemester: async (semester) => {
+    const path = get().path
+    const tree = get().tree
+    const sem = tree?.semesters.find((s) => s.name === semester)
+    if (!path || !sem) return
+    await window.api.spTrash(sem.path)
+    const index = get().index
+    let changed = false
+    for (const [k, e] of Object.entries(index.exams ?? {})) {
+      if (safeName(e.semester) === safeName(semester)) {
+        delete index.exams?.[k]
+        changed = true
+      }
+    }
+    for (const k of Object.keys(index.results ?? {})) {
+      if (safeName(index.results![k].semester) === safeName(semester)) {
+        delete index.results![k]
+        changed = true
+      }
+    }
+    if (changed) await saveIndex(path, index)
+    set({ index: { ...index } })
+    await get().refresh()
+    toast.success(`„${semester}" in den Papierkorb verschoben.`)
+  },
+
+  deleteCourse: async (semester, kurs) => {
+    const path = get().path
+    const tree = get().tree
+    const sem = tree?.semesters.find((s) => s.name === semester)
+    const course = sem?.courses.find((c) => c.name === kurs)
+    if (!path || !course) return
+    await window.api.spTrash(course.path)
+    const index = get().index
+    let changed = false
+    for (const [k, e] of Object.entries(index.exams ?? {})) {
+      if (safeName(e.semester) === safeName(semester) && safeName(e.kurs) === safeName(kurs)) {
+        delete index.exams?.[k]
+        changed = true
+      }
+    }
+    const rk = resultKey(semester, kurs)
+    if (index.results?.[rk]) {
+      delete index.results[rk]
+      changed = true
+    }
+    if (changed) await saveIndex(path, index)
+    set({ index: { ...index } })
+    await get().refresh()
+    toast.success(`„${kurs}" in den Papierkorb verschoben.`)
   },
 
   scaffoldCourses: async (semester, kurse) => {
@@ -1293,6 +1354,7 @@ export const useStudienplanerStore = create<SpState>((set, get) => ({
       await get().setFachResult(semester, kurs, {
         components: input.components,
         ects: input.ects,
+        excludeFromGpa: input.excludeFromGpa ?? false,
         prep,
         ...(input.archive ? { archivedAt: new Date().toISOString() } : {})
       })

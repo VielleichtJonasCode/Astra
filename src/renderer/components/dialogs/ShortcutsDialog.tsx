@@ -17,23 +17,11 @@ const GROUPS: { title: string; rows: [string, string][] }[] = [
     rows: [
       ['⌘Z', 'Widerrufen'],
       ['⇧⌘Z', 'Wiederholen'],
+      ['⌘C', 'Objekt kopieren'],
+      ['⌘V', 'Objekt einfügen'],
       ['⌘F', 'Im Dokument suchen'],
-      ['⌫', 'Auswahl löschen'],
+      ['⌫ / ⌦', 'Auswahl löschen'],
       ['Esc', 'Werkzeug zurücksetzen']
-    ]
-  },
-  {
-    title: 'Werkzeuge',
-    rows: [
-      ['V', 'Auswählen'],
-      ['T', 'Text hinzufügen'],
-      ['E', 'Text bearbeiten'],
-      ['B', 'Schwärzen'],
-      ['H', 'Hervorheben'],
-      ['D', 'Zeichnen'],
-      ['S', 'Form'],
-      ['I', 'Bild'],
-      ['N', 'Notiz']
     ]
   },
   {

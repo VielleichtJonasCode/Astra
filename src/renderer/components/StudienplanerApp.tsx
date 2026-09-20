@@ -1183,7 +1183,9 @@ function Tree({
   onSelect,
   onAddSemester,
   onAddCourse,
-  onImportTimetable
+  onImportTimetable,
+  onDeleteSemester,
+  onDeleteCourse
 }: {
   semesters: SpSemester[]
   selected: { semester: string; kurs: string } | null
@@ -1191,6 +1193,8 @@ function Tree({
   onAddSemester: (name: string) => void
   onAddCourse: (semester: string, name: string) => void
   onImportTimetable: () => void
+  onDeleteSemester: (semester: string) => void
+  onDeleteCourse: (semester: string, kurs: string) => void
 }): JSX.Element {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [addingSem, setAddingSem] = useState(false)
@@ -1241,32 +1245,49 @@ function Tree({
           const isCollapsed = collapsed[sem.path]
           return (
             <div key={sem.path} className="sp__sem">
-              <button
-                className="sp__semrow"
-                onClick={() => setCollapsed((c) => ({ ...c, [sem.path]: !c[sem.path] }))}
-              >
-                <Icon name={isCollapsed ? 'chevron-right' : 'chevron-down'} size={13} />
-                <Icon name="graduation" size={14} />
-                <span className="sp__semname">{sem.name}</span>
-                <span className="sp__count">{sem.courses.length}</span>
-              </button>
+              <div className="sp__semrow">
+                <button
+                  className="sp__semrow__btn"
+                  onClick={() => setCollapsed((c) => ({ ...c, [sem.path]: !c[sem.path] }))}
+                >
+                  <Icon name={isCollapsed ? 'chevron-right' : 'chevron-down'} size={13} />
+                  <Icon name="graduation" size={14} />
+                  <span className="sp__semname">{sem.name}</span>
+                  <span className="sp__count">{sem.courses.length}</span>
+                </button>
+                <IconButton
+                  name="trash"
+                  label={`Semester „${sem.name}" löschen`}
+                  onClick={() => onDeleteSemester(sem.name)}
+                />
+              </div>
               {!isCollapsed && (
                 <div className="sp__courses">
                   {sem.courses.map((c) => (
-                    <button
+                    <div
                       key={c.path}
                       className={cx(
                         'sp__course',
                         selected?.semester === sem.name && selected?.kurs === c.name && 'is-active'
                       )}
-                      onClick={() => onSelect(sem.name, c.name)}
                     >
-                      <Icon name="folder" size={13} />
-                      <span>{c.name}</span>
-                      <span className="sp__count">
-                        {c.files.length + (c.groups ?? []).reduce((n, g) => n + g.files.length, 0)}
-                      </span>
-                    </button>
+                      <button
+                        className="sp__course__btn"
+                        onClick={() => onSelect(sem.name, c.name)}
+                      >
+                        <Icon name="folder" size={13} />
+                        <span>{c.name}</span>
+                        <span className="sp__count">
+                          {c.files.length +
+                            (c.groups ?? []).reduce((n, g) => n + g.files.length, 0)}
+                        </span>
+                      </button>
+                      <IconButton
+                        name="trash"
+                        label={`Kurs „${c.name}" löschen`}
+                        onClick={() => onDeleteCourse(sem.name, c.name)}
+                      />
+                    </div>
                   ))}
                   {addCourseFor === sem.name ? (
                     <form
@@ -1612,6 +1633,8 @@ export function StudienplanerApp(): JSX.Element {
     refresh,
     createSemester,
     createCourse,
+    deleteSemester,
+    deleteCourse,
     deleteFile,
     openInEditor,
     linkExamToCourse,
@@ -2131,6 +2154,22 @@ export function StudienplanerApp(): JSX.Element {
           onAddSemester={(name) => void createSemester(name)}
           onAddCourse={(semester, name) => void createCourse(semester, name)}
           onImportTimetable={() => setTimetableOpen(true)}
+          onDeleteSemester={(semester) => {
+            if (
+              !confirm(
+                `Semester „${semester}" mit allen Kursen und Dateien in den Papierkorb verschieben?`
+              )
+            ) {
+              return
+            }
+            if (selected?.semester === semester) setSelected(null)
+            void deleteSemester(semester)
+          }}
+          onDeleteCourse={(semester, kurs) => {
+            if (!confirm(`Kurs „${kurs}" mit allen Dateien in den Papierkorb verschieben?`)) return
+            if (selected?.semester === semester && selected?.kurs === kurs) setSelected(null)
+            void deleteCourse(semester, kurs)
+          }}
         />
         <div
           className="sp__resize"

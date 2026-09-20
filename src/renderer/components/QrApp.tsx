@@ -19,6 +19,12 @@ import {
   type ContentFields,
   type ContentType
 } from '../qr/payload'
+import {
+  decodeFrameDeep,
+  decodeFrameFast,
+  decodeRobust,
+  type DecodedCode
+} from '../qr/robustDecode'
 import './qrapp.css'
 
 type CodeType = 'qr' | 'code128' | 'ean13' | 'ean8' | 'upc'
@@ -43,7 +49,7 @@ const BARCODE_HINT: Record<Exclude<CodeType, 'qr'>, string> = {
   upc: 'genau 11–12 Ziffern'
 }
 
-/** Dev-Selbsttest: QR + Barcode erzeugen und wieder auslesen. Aktiv via #qrtest=1 */
+/** Dev-Selbsttest: QR + Barcode erzeugen und wieder auslesen, auch verdreht/kontrastarm. Aktiv via #qrtest=1 */
 function useQrSelfTest(): void {
   useEffect(() => {
     if (!/qrtest=1/.test(location.hash)) return
@@ -61,6 +67,46 @@ function useQrSelfTest(): void {
         const ok =
           r1.getText() === 'https://astra.example/äöü-€' && r2.getText() === '5901234123457'
         log(ok ? 'QRTEST OK' : `QRTEST FAIL ${r1.getText()} | ${r2.getText()}`)
+
+        // decodeRobust muss auch bei um 90° gedrehtem und blassem (kontrastarmem)
+        // Foto noch durchkommen – genau die Fälle, für die es gebaut wurde.
+        const rotated = document.createElement('canvas')
+        rotated.width = c1.height
+        rotated.height = c1.width
+        const rctx = rotated.getContext('2d')!
+        rctx.translate(rotated.width / 2, rotated.height / 2)
+        rctx.rotate(Math.PI / 2)
+        rctx.drawImage(c1, -c1.width / 2, -c1.height / 2)
+        const r3 = await decodeRobust(rotated.toDataURL())
+
+        const faint = document.createElement('canvas')
+        faint.width = c1.width
+        faint.height = c1.height
+        const fctx = faint.getContext('2d')!
+        fctx.fillStyle = '#9a9a9a'
+        fctx.fillRect(0, 0, faint.width, faint.height)
+        fctx.globalAlpha = 0.22
+        fctx.drawImage(c1, 0, 0)
+        fctx.globalAlpha = 1
+        const r4 = await decodeRobust(faint.toDataURL())
+
+        // Code nimmt nur einen kleinen Teil eines großen Fotos ein (Kachel-Suche).
+        const small = document.createElement('canvas')
+        small.width = 1600
+        small.height = 1200
+        const sctx = small.getContext('2d')!
+        sctx.fillStyle = '#fff'
+        sctx.fillRect(0, 0, small.width, small.height)
+        sctx.drawImage(c1, small.width - 340, small.height - 340, 120, 120)
+        const r5 = await decodeRobust(small.toDataURL())
+
+        const okRobust =
+          r3.text === 'https://astra.example/äöü-€' &&
+          r4.text === 'https://astra.example/äöü-€' &&
+          r5.text === 'https://astra.example/äöü-€'
+        log(
+          okRobust ? 'QRTEST ROBUST OK' : `QRTEST ROBUST FAIL ${r3.text} | ${r4.text} | ${r5.text}`
+        )
       } catch (e) {
         log(`QRTEST FAIL ${e instanceof Error ? e.message : String(e)}`)
       }
@@ -476,6 +522,17 @@ function ReadPane(): JSX.Element {
   const [busy, setBusy] = useState(false)
   const [preview, setPreview] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
+  const [inputMode, setInputMode] = useState<'file' | 'camera'>(
+    /qrsource=camera/.test(location.hash) ? 'camera' : 'file'
+  )
+
+  const showResult = (code: DecodedCode): void => {
+    setResult({
+      text: code.text,
+      format: code.format,
+      isUrl: /^(https?|mailto|tel):/i.test(code.text)
+    })
+  }
 
   const decode = async (source: Blob | string): Promise<void> => {
     setBusy(true)
@@ -484,17 +541,9 @@ function ReadPane(): JSX.Element {
     const url = typeof source === 'string' ? source : URL.createObjectURL(source)
     setPreview(url)
     try {
-      const { BrowserMultiFormatReader, BarcodeFormat } = await import('@zxing/library')
-      const reader = new BrowserMultiFormatReader()
-      const res = await reader.decodeFromImageUrl(url)
-      const text = res.getText()
-      setResult({
-        text,
-        format: BarcodeFormat[res.getBarcodeFormat()] ?? 'Code',
-        isUrl: /^(https?|mailto|tel):/i.test(text)
-      })
+      showResult(await decodeRobust(url))
     } catch {
-      setError('Kein Code erkannt. Bild schärfer oder größer wählen.')
+      setError('Kein Code erkannt. Bild schärfer, gerader oder größer wählen.')
     } finally {
       setBusy(false)
     }
@@ -507,7 +556,15 @@ function ReadPane(): JSX.Element {
     void decode(bytesToBlob(f.bytes, ''))
   }
 
+  const onCameraHit = (code: DecodedCode, snapshot: string): void => {
+    setError(null)
+    setPreview(snapshot)
+    showResult(code)
+    setInputMode('file')
+  }
+
   useEffect(() => {
+    if (inputMode !== 'file') return
     const onPaste = (e: ClipboardEvent): void => {
       const item = Array.from(e.clipboardData?.items ?? []).find((i) => i.type.startsWith('image/'))
       const blob = item?.getAsFile()
@@ -515,49 +572,74 @@ function ReadPane(): JSX.Element {
     }
     window.addEventListener('paste', onPaste)
     return () => window.removeEventListener('paste', onPaste)
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputMode])
 
   return (
     <div className="qr__body qr__body--read">
-      <div
-        className={cx('qr__readzone', dragging && 'is-over')}
-        onDragEnter={(e) => {
-          if (e.dataTransfer.types.includes('Files')) {
-            e.preventDefault()
-            e.stopPropagation()
-            setDragging(true)
-          }
-        }}
-        onDragOver={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-        }}
-        onDragLeave={(e) => {
-          e.stopPropagation()
-          setDragging(false)
-        }}
-        onDrop={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          setDragging(false)
-          const f = e.dataTransfer.files[0]
-          if (f) void decode(f)
-        }}
-      >
-        {preview ? (
-          <img src={preview} alt="" className="qr__readimg" />
+      <div className="qr__readmain">
+        <div className="qr__sourceswitch">
+          <Segmented
+            value={inputMode}
+            onChange={(m) => {
+              setInputMode(m)
+              if (m === 'camera') {
+                setError(null)
+                setResult(null)
+                setPreview(null)
+              }
+            }}
+            options={[
+              { value: 'file', label: 'Bild' },
+              { value: 'camera', label: 'Kamera' }
+            ]}
+          />
+        </div>
+
+        {inputMode === 'camera' ? (
+          <CameraReader onHit={onCameraHit} />
         ) : (
-          <>
-            <div className="qr__readicon">
-              <Icon name="search" size={30} />
-            </div>
-            <div className="qr__readtitle">Bild mit QR- oder Barcode ablegen</div>
-            <div className="qr__readsub">oder aus der Zwischenablage einfügen (⌘V)</div>
-          </>
+          <div
+            className={cx('qr__readzone', dragging && 'is-over')}
+            onDragEnter={(e) => {
+              if (e.dataTransfer.types.includes('Files')) {
+                e.preventDefault()
+                e.stopPropagation()
+                setDragging(true)
+              }
+            }}
+            onDragOver={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+            }}
+            onDragLeave={(e) => {
+              e.stopPropagation()
+              setDragging(false)
+            }}
+            onDrop={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setDragging(false)
+              const f = e.dataTransfer.files[0]
+              if (f) void decode(f)
+            }}
+          >
+            {preview ? (
+              <img src={preview} alt="" className="qr__readimg" />
+            ) : (
+              <>
+                <div className="qr__readicon">
+                  <Icon name="search" size={30} />
+                </div>
+                <div className="qr__readtitle">Bild mit QR- oder Barcode ablegen</div>
+                <div className="qr__readsub">oder aus der Zwischenablage einfügen (⌘V)</div>
+              </>
+            )}
+            <Button variant="primary" icon="image" onClick={() => void pick()}>
+              Bild wählen …
+            </Button>
+          </div>
         )}
-        <Button variant="primary" icon="image" onClick={() => void pick()}>
-          Bild wählen …
-        </Button>
       </div>
 
       <div className="qr__result">
@@ -593,6 +675,99 @@ function ReadPane(): JSX.Element {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+/**
+ * Live-Kamera-Scan: liest kontinuierlich Frames der Mac-Kamera, solange bis ein Code
+ * gefunden wird. Deutlich zuverlässiger als ein einzelnes Foto, weil sich Winkel, Abstand
+ * und Licht in Echtzeit korrigieren lassen – jeder Frame ist ein neuer Versuch. Die meisten
+ * Frames laufen über den schnellen Pfad (ein Bild, eine Runde); alle 1,5 s ohne Treffer wird
+ * zusätzlich ein gründlicherer Durchlauf (kontrastgestreckt, geschärft) probiert.
+ */
+function CameraReader({
+  onHit
+}: {
+  onHit: (code: DecodedCode, snapshot: string) => void
+}): JSX.Element {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const [status, setStatus] = useState<'starting' | 'running' | 'denied' | 'error'>('starting')
+  const onHitRef = useRef(onHit)
+  onHitRef.current = onHit
+
+  useEffect(() => {
+    let stream: MediaStream | null = null
+    let stopped = false
+    let raf = 0
+
+    const stop = (): void => {
+      stopped = true
+      if (raf) cancelAnimationFrame(raf)
+      stream?.getTracks().forEach((t) => t.stop())
+    }
+
+    void (async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
+        })
+        if (stopped) {
+          stream.getTracks().forEach((t) => t.stop())
+          return
+        }
+        const video = videoRef.current
+        if (!video) return
+        video.srcObject = stream
+        await video.play()
+        setStatus('running')
+
+        const canvas = document.createElement('canvas')
+        let lastDeep = 0
+
+        const tick = async (): Promise<void> => {
+          if (stopped) return
+          const v = videoRef.current
+          if (v && v.videoWidth > 0) {
+            canvas.width = v.videoWidth
+            canvas.height = v.videoHeight
+            canvas.getContext('2d', { willReadFrequently: true })!.drawImage(v, 0, 0)
+            const now = performance.now()
+            const deep = now - lastDeep > 1500
+            const hit = deep ? await decodeFrameDeep(canvas) : await decodeFrameFast(canvas)
+            if (deep) lastDeep = now
+            if (hit) {
+              onHitRef.current(hit, canvas.toDataURL('image/jpeg', 0.85))
+              stop()
+              return
+            }
+          }
+          if (!stopped) raf = requestAnimationFrame(() => void tick())
+        }
+        raf = requestAnimationFrame(() => void tick())
+      } catch (e) {
+        setStatus(e instanceof Error && e.name === 'NotAllowedError' ? 'denied' : 'error')
+      }
+    })()
+
+    return stop
+  }, [])
+
+  return (
+    <div className="qr__camerazone">
+      <video ref={videoRef} className="qr__cameravideo" muted playsInline />
+      {status === 'running' && <div className="qr__cameraframe" aria-hidden />}
+      {status === 'starting' && <div className="qr__cameramsg">Kamera wird gestartet …</div>}
+      {status === 'denied' && (
+        <div className="qr__cameramsg is-err">
+          Kein Zugriff auf die Kamera. Bitte unter „Systemeinstellungen → Datenschutz &amp;
+          Sicherheit → Kamera" für Astra erlauben.
+        </div>
+      )}
+      {status === 'error' && (
+        <div className="qr__cameramsg is-err">Kamera konnte nicht gestartet werden.</div>
+      )}
     </div>
   )
 }

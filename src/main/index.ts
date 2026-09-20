@@ -75,6 +75,14 @@ function createWindow(): void {
 
   trackWindowState(mainWindow)
 
+  // Renderer-Konsole im Terminal sichtbar machen – hilft beim Auswerten der
+  // #…test=1 Dev-Selbsttests (die nur console.log schreiben), nur im Dev-Build.
+  if (isDev) {
+    mainWindow.webContents.on('console-message', (_e, _level, message) => {
+      console.log(`[renderer] ${message}`)
+    })
+  }
+
   mainWindow.once('ready-to-show', () => {
     if (process.env['PDFSTUDIO_PERF']) {
       console.log(`[perf] ready-to-show nach ${Math.round(process.uptime() * 1000)} ms`)
@@ -173,6 +181,14 @@ function createWindow(): void {
   if (process.env['PDFSTUDIO_SP_PAGE']) devParams.set('sppage', process.env['PDFSTUDIO_SP_PAGE'])
   if (process.env['PDFSTUDIO_SP_HASH']) {
     for (const kv of process.env['PDFSTUDIO_SP_HASH'].split('&')) {
+      const [k, ...v] = kv.split('=')
+      if (k) devParams.set(k, v.join('='))
+    }
+  }
+  // Generischer Zusatz-Hash für Dev-Tests, die mehr als einen Parameter brauchen
+  // (z. B. Ansicht + Unteransicht zusammen), unabhängig vom jeweiligen Werkzeug.
+  if (process.env['PDFSTUDIO_HASH_EXTRA']) {
+    for (const kv of process.env['PDFSTUDIO_HASH_EXTRA'].split('&')) {
       const [k, ...v] = kv.split('=')
       if (k) devParams.set(k, v.join('='))
     }

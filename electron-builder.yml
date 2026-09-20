@@ -41,6 +41,7 @@ mac:
   extendInfo:
     NSCalendarsUsageDescription: Astra zeigt im Studienplaner deine Vorlesungen und Klausuren aus dem Kalender an.
     NSCalendarsFullAccessUsageDescription: Astra zeigt im Studienplaner deine Vorlesungen und Klausuren aus dem Kalender an.
+    NSCameraUsageDescription: Astra nutzt die Kamera, um QR- und Barcodes im Werkzeug „QR/Barcode" live zu scannen.
   target:
     - target: dmg
       arch: arm64

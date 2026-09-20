@@ -53,6 +53,12 @@ export interface FachResult {
   components: GradeComponent[]
   /** Gesetzt, sobald das Fach abgeschlossen/archiviert wurde. */
   archivedAt?: string
+  /**
+   * Fach zählt bewusst nicht für den Bachelor-Schnitt (z. B. Vorkurs,
+   * Zusatzleistung). Note/ECTS bleiben erhalten und sichtbar, gehen aber nicht
+   * in Gesamt-/Semesterschnitt, Diagramme oder die KI-Lernauswertung ein.
+   */
+  excludeFromGpa?: boolean
   /** Schnappschuss der Lern-Vorbereitung zum Zeitpunkt der Ergebniseingabe. */
   prep?: {
     plannedTasks: number

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStudienplanerStore } from '../store/studienplanerStore'
-import { resultKey, type FachResult } from '../studienplaner/model'
+import { resultKey, safeName, type FachResult } from '../studienplaner/model'
 import {
   buildTacticsDigest,
   componentGrade,
@@ -16,13 +16,16 @@ import { analyzeStudyTactics } from '../studienplaner/ai'
 import { fachHue } from './PlanChecklist'
 import { Icon } from './common/Icon'
 import { Button, IconButton } from './common/Button'
-import { Segmented } from './common/controls'
+import { Segmented, Select, TextInput } from './common/controls'
 import { Sheet } from './common/Sheet'
 import { EmptyState, Spinner } from './common/misc'
 import { Markdown } from './common/Markdown'
 import { toast } from './common/toast'
 import { ExamResultForm } from './ExamResultForm'
 import './studienergebnisse.css'
+
+/** Sentinel für „neues Semester/Kurs anlegen" in den Auswahlfeldern unten. */
+const NEW = '__new__'
 
 type SortMode = 'semester' | 'grade' | 'date'
 
@@ -160,6 +163,7 @@ export function StudienErgebnisse({ onBack }: { onBack: () => void }): JSX.Eleme
   const tree = useStudienplanerStore((s) => s.tree)
   const results = useMemo<FachResult[]>(() => Object.values(index.results ?? {}), [index.results])
   const [edit, setEdit] = useState<{ semester: string; kurs: string } | null>(null)
+  const [adding, setAdding] = useState(false)
   const [detail, setDetail] = useState<{ semester: string; kurs: string } | null>(null)
   const [sortBy, setSortBy] = useState<SortMode>('semester')
   const [analyzing, setAnalyzing] = useState(false)
@@ -169,7 +173,8 @@ export function StudienErgebnisse({ onBack }: { onBack: () => void }): JSX.Eleme
   useEffect(() => {
     void window.api.llmHasKey().then(setHasKey)
   }, [])
-  // Nur für Screenshots: #sescroll=1 scrollt, #sesort=<mode>, #sedetail=<Sem>/<Kurs>.
+  // Nur für Screenshots: #sescroll=1 scrollt, #sesort=<mode>, #sedetail=<Sem>/<Kurs>,
+  // #seedit=<Sem>/<Kurs>, #seadd=1 öffnet „Ergebnis hinzufügen".
   useEffect(() => {
     const sc = /[#&]sescroll=(\d+)/.exec(location.hash)
     if (sc) {
@@ -188,9 +193,12 @@ export function StudienErgebnisse({ onBack }: { onBack: () => void }): JSX.Eleme
       const [sem, ku] = decodeURIComponent(ed[1].replace(/\+/g, ' ')).split('/')
       if (sem && ku) setTimeout(() => setEdit({ semester: sem, kurs: ku }), 400)
     }
+    if (/[#&]seadd=1/.test(location.hash)) setTimeout(() => setAdding(true), 400)
   }, [])
 
-  const graded = results.filter((r) => fachGrade(r) !== null)
+  // Fächer, die bewusst nicht in den Bachelor-Schnitt eingehen (z. B. Vorkurs),
+  // bleiben als Karte sichtbar, fließen aber nicht in Diagramme/Auswertung ein.
+  const graded = results.filter((r) => fachGrade(r) !== null && !r.excludeFromGpa)
   const overall: GpaSummary = overallGpa(results)
 
   const tactics = index.tactics ?? null
@@ -300,9 +308,37 @@ export function StudienErgebnisse({ onBack }: { onBack: () => void }): JSX.Eleme
           icon="graduation"
           title="Noch keine Ergebnisse"
           hint={
-            'Trag beim jeweiligen Fach unter „Ergebnis“ deine Note(n) und ECTS ein – hier entsteht dann der Notenschnitt mit Diagrammen.'
+            'Trag eine Note ein – direkt hier oder beim jeweiligen Fach unter „Ergebnis“. ECTS legen den Notenschnitt fest, der dann hier mit Diagrammen erscheint.'
+          }
+          action={
+            <Button variant="primary" icon="plus" onClick={() => setAdding(true)}>
+              Ergebnis hinzufügen
+            </Button>
           }
         />
+        {adding && (
+          <AddResultSheet
+            onClose={() => setAdding(false)}
+            onCreate={(sem, k) => {
+              setAdding(false)
+              setEdit({ semester: sem, kurs: k })
+            }}
+          />
+        )}
+        {edit && (
+          <Sheet
+            title={`Ergebnis · ${edit.kurs}`}
+            subtitle={edit.semester}
+            onClose={() => setEdit(null)}
+          >
+            <ExamResultForm
+              semester={edit.semester}
+              kurs={edit.kurs}
+              initial={index.results?.[resultKey(edit.semester, edit.kurs)] ?? null}
+              onSaved={() => setEdit(null)}
+            />
+          </Sheet>
+        )}
       </div>
     )
   }
@@ -443,15 +479,20 @@ export function StudienErgebnisse({ onBack }: { onBack: () => void }): JSX.Eleme
 
       <div className="se__fachhead">
         <h3>Fächer</h3>
-        <Segmented<SortMode>
-          value={sortBy}
-          onChange={setSortBy}
-          options={[
-            { value: 'semester', label: 'Semester' },
-            { value: 'date', label: 'Datum' },
-            { value: 'grade', label: 'Note' }
-          ]}
-        />
+        <div className="se__fachheadright">
+          <Segmented<SortMode>
+            value={sortBy}
+            onChange={setSortBy}
+            options={[
+              { value: 'semester', label: 'Semester' },
+              { value: 'date', label: 'Datum' },
+              { value: 'grade', label: 'Note' }
+            ]}
+          />
+          <Button size="sm" icon="plus" onClick={() => setAdding(true)}>
+            Ergebnis
+          </Button>
+        </div>
       </div>
 
       {sortBy === 'semester' ? (
@@ -517,6 +558,16 @@ export function StudienErgebnisse({ onBack }: { onBack: () => void }): JSX.Eleme
           />
         </Sheet>
       )}
+
+      {adding && (
+        <AddResultSheet
+          onClose={() => setAdding(false)}
+          onCreate={(sem, k) => {
+            setAdding(false)
+            setEdit({ semester: sem, kurs: k })
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -542,6 +593,7 @@ function FachCard({ r, onOpen }: { r: FachResult; onOpen: () => void }): JSX.Ele
         {r.semester}
         {r.ects ? ` · ${r.ects} ECTS` : ' · ECTS fehlt'}
       </div>
+      {r.excludeFromGpa && <span className="se__fachexcl">zählt nicht zum Schnitt</span>}
       {r.prep && (
         <div className="se__fachprep">
           {r.prep.doneTasks}/{r.prep.plannedTasks} Aufgaben
@@ -577,6 +629,12 @@ function FachDetail({
         {g ? gradeLabel(g) : pass === true ? 'bestanden' : pass === false ? 'nicht bestanden' : '–'}
         <em>Fach-Note</em>
       </div>
+      {r.excludeFromGpa && (
+        <p className="se__warn">
+          Zählt nicht für den Bachelor-Schnitt (z.&nbsp;B. Vorkurs) – erscheint deshalb nicht in
+          Gesamtschnitt oder Diagrammen.
+        </p>
+      )}
 
       <h4 className="se-detail__h">Teilleistungen</h4>
       <div className="se-detail__comps">
@@ -648,5 +706,121 @@ function FachDetail({
         Ergebnis bearbeiten
       </Button>
     </div>
+  )
+}
+
+/* ── Neues Ergebnis anlegen (ohne Umweg über Lernplan/Prüfungs-Verknüpfung) ────── */
+
+function AddResultSheet({
+  onClose,
+  onCreate
+}: {
+  onClose: () => void
+  onCreate: (semester: string, kurs: string) => void
+}): JSX.Element {
+  const tree = useStudienplanerStore((s) => s.tree)
+  const semesters = tree?.semesters ?? []
+
+  const [semester, setSemester] = useState(semesters[0]?.name ?? NEW)
+  const [newSemester, setNewSemester] = useState('')
+  const [kurs, setKurs] = useState('')
+  const [newKurs, setNewKurs] = useState('')
+  const [pending, setPending] = useState(false)
+
+  const courses = semesters.find((s) => s.name === semester)?.courses ?? []
+
+  const submit = async (): Promise<void> => {
+    const sem = (semester === NEW ? newSemester : semester).trim()
+    const k = (kurs === NEW || !kurs ? newKurs : kurs).trim()
+    if (!sem || !k) {
+      toast.error('Bitte Semester und Kurs/Thema angeben.')
+      return
+    }
+    setPending(true)
+    try {
+      if (semester === NEW) await useStudienplanerStore.getState().createSemester(sem)
+      if (kurs === NEW || !kurs) await useStudienplanerStore.getState().createCourse(sem, k)
+      onCreate(safeName(sem), safeName(k))
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return (
+    <Sheet
+      title="Ergebnis hinzufügen"
+      subtitle="Note für ein Fach eintragen – auch ohne Lernplan oder verknüpfte Prüfung"
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Abbrechen
+          </Button>
+          <Button
+            variant="primary"
+            icon="graduation"
+            disabled={pending}
+            onClick={() => void submit()}
+          >
+            Weiter
+          </Button>
+        </>
+      }
+    >
+      <label className="sp-field">
+        <span>Semester</span>
+        <Select
+          value={semester}
+          onChange={(e) => {
+            setSemester(e.target.value)
+            setKurs('')
+          }}
+          options={[
+            ...semesters.map((s) => ({ value: s.name, label: s.name })),
+            { value: NEW, label: '＋ Neues Semester' }
+          ]}
+        />
+      </label>
+      {semester === NEW && (
+        <TextInput
+          autoFocus
+          placeholder="z. B. WS 2022"
+          value={newSemester}
+          onChange={(e) => setNewSemester(e.target.value)}
+        />
+      )}
+      {semester !== NEW && courses.length > 0 ? (
+        <>
+          <label className="sp-field">
+            <span>Kurs / Thema</span>
+            <Select
+              value={kurs}
+              onChange={(e) => setKurs(e.target.value)}
+              options={[
+                { value: '', label: '— wählen —' },
+                ...courses.map((c) => ({ value: c.name, label: c.name })),
+                { value: NEW, label: '＋ Neuer Kurs' }
+              ]}
+            />
+          </label>
+          {(kurs === NEW || !kurs) && (
+            <TextInput
+              placeholder="Kursname"
+              value={newKurs}
+              onChange={(e) => setNewKurs(e.target.value)}
+            />
+          )}
+        </>
+      ) : (
+        <label className="sp-field">
+          <span>Kurs / Thema</span>
+          <TextInput
+            placeholder="z. B. Vorkurs Mathematik"
+            value={newKurs}
+            onChange={(e) => setNewKurs(e.target.value)}
+          />
+        </label>
+      )}
+    </Sheet>
   )
 }

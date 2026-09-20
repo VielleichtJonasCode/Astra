@@ -35,6 +35,7 @@ const CAT_ICON: Record<Category, Parameters<typeof Icon>[0]['name']> = {
   image: 'image',
   pdf: 'page',
   document: 'type',
+  spreadsheet: 'grid',
   audio: 'droplet',
   video: 'presentation',
   other: 'file-plus'
@@ -43,15 +44,21 @@ const CAT_TINT: Record<Category, string> = {
   image: '#30d158',
   pdf: '#ff453a',
   document: '#0a84ff',
+  spreadsheet: '#34c759',
   audio: '#bf5af2',
   video: '#ff9f0a',
   other: '#8e8e93'
 }
 
 const FMT_GROUPS: { label: string; tint: string; items: string[] }[] = [
-  { label: 'Bilder', tint: '#30d158', items: ['HEIC', 'PNG', 'JPEG', 'WebP', 'AVIF', 'TIFF'] },
+  {
+    label: 'Bilder',
+    tint: '#30d158',
+    items: ['HEIC', 'PNG', 'JPEG', 'WebP', 'AVIF', 'SVG', 'TIFF']
+  },
   { label: 'Dokumente', tint: '#0a84ff', items: ['PDF', 'Word', 'Text', 'Markdown', 'HTML'] },
-  { label: 'Audio', tint: '#bf5af2', items: ['MP3', 'WAV', 'M4A', 'FLAC', 'OGG'] },
+  { label: 'Tabellen', tint: '#34c759', items: ['Excel', 'CSV'] },
+  { label: 'Audio', tint: '#bf5af2', items: ['MP3', 'WAV', 'M4A', 'FLAC', 'OGG', 'Opus'] },
   { label: 'Video', tint: '#ff9f0a', items: ['MP4', 'MOV', 'MKV', 'WebM', 'GIF'] }
 ]
 

@@ -83,7 +83,12 @@ export function buildAppMenu(getWindow: () => BrowserWindow | null): void {
         { role: 'cut', label: 'Ausschneiden' },
         { role: 'copy', label: 'Kopieren' },
         { role: 'paste', label: 'Einsetzen' },
-        { label: 'Auswahl löschen', accelerator: 'Delete', click: () => send('edit.delete') },
+        // Kein natives Accelerator hier: auf der Mac-Tastatur sendet die
+        // "Löschen"-Taste 'Backspace', nicht 'Delete' – das native Menü kann nur
+        // eins von beiden binden. Die Löschtaste wird stattdessen im Renderer
+        // behandelt (useAppWiring.ts), der beide Tasten kennt und respektiert,
+        // ob gerade in einem Textfeld getippt wird.
+        { label: 'Auswahl löschen', click: () => send('edit.delete') },
         { type: 'separator' },
         { label: 'Im Dokument suchen…', accelerator: 'CmdOrCtrl+F', click: () => send('edit.find') }
       ]
@@ -166,23 +171,24 @@ export function buildAppMenu(getWindow: () => BrowserWindow | null): void {
     },
     {
       label: 'Werkzeuge',
+      // Keine nackten Buchstaben-Accelerators (ohne Cmd/Ctrl): die feuern in
+      // Electron unabhängig davon, welches Feld gerade den Fokus hat – z. B.
+      // löste "I" beim Tippen in einem beliebigen Textfeld ungewollt "Bild
+      // einfügen…" (einen Öffnen-Dialog) aus. Werkzeuge bleiben über die
+      // Werkzeugleiste und dieses Menü per Klick erreichbar.
       submenu: [
-        { label: 'Text hinzufügen', accelerator: 'T', click: () => send('tool.text') },
-        {
-          label: 'Vorhandenen Text bearbeiten',
-          accelerator: 'E',
-          click: () => send('tool.editText')
-        },
-        { label: 'Text schwärzen / löschen', accelerator: 'B', click: () => send('tool.redact') },
+        { label: 'Text hinzufügen', click: () => send('tool.text') },
+        { label: 'Vorhandenen Text bearbeiten', click: () => send('tool.editText') },
+        { label: 'Text schwärzen / löschen', click: () => send('tool.redact') },
         { label: 'Redaktions-Assistent…', click: () => send('tools.redactAssistant') },
         { type: 'separator' },
-        { label: 'Hervorheben', accelerator: 'H', click: () => send('tool.highlight') },
+        { label: 'Hervorheben', click: () => send('tool.highlight') },
         { label: 'Unterstreichen', click: () => send('tool.underline') },
         { label: 'Durchstreichen', click: () => send('tool.strike') },
-        { label: 'Zeichnen', accelerator: 'D', click: () => send('tool.draw') },
-        { label: 'Formen', accelerator: 'S', click: () => send('tool.shapes') },
-        { label: 'Bild einfügen', accelerator: 'I', click: () => send('tool.image') },
-        { label: 'Notiz', accelerator: 'N', click: () => send('tool.note') },
+        { label: 'Zeichnen', click: () => send('tool.draw') },
+        { label: 'Formen', click: () => send('tool.shapes') },
+        { label: 'Bild einfügen', click: () => send('tool.image') },
+        { label: 'Notiz', click: () => send('tool.note') },
         { label: 'Stempel', click: () => send('tool.stamp') },
         { label: 'Unterschrift', click: () => send('tool.signature') },
         { type: 'separator' },

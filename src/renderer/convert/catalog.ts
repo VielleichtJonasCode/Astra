@@ -1,4 +1,4 @@
-export type Category = 'image' | 'pdf' | 'document' | 'audio' | 'video' | 'other'
+export type Category = 'image' | 'pdf' | 'document' | 'spreadsheet' | 'audio' | 'video' | 'other'
 
 export const EXT_CATEGORY: Record<string, Category> = {
   png: 'image',
@@ -12,6 +12,7 @@ export const EXT_CATEGORY: Record<string, Category> = {
   heif: 'image',
   tif: 'image',
   tiff: 'image',
+  svg: 'image',
   pdf: 'pdf',
   docx: 'document',
   txt: 'document',
@@ -20,6 +21,8 @@ export const EXT_CATEGORY: Record<string, Category> = {
   html: 'document',
   htm: 'document',
   rtf: 'document',
+  xlsx: 'spreadsheet',
+  csv: 'spreadsheet',
   mp3: 'audio',
   wav: 'audio',
   aac: 'audio',
@@ -47,7 +50,7 @@ export function baseName(name: string): string {
 }
 
 const IMAGE_TARGETS = ['png', 'jpeg', 'webp', 'avif', 'bmp']
-const AUDIO_TARGETS = ['mp3', 'wav', 'aac', 'm4a', 'flac', 'ogg']
+const AUDIO_TARGETS = ['mp3', 'wav', 'aac', 'm4a', 'flac', 'ogg', 'opus']
 const VIDEO_TARGETS = ['mp4', 'mov', 'mkv', 'webm', 'avi']
 
 export interface Target {
@@ -93,6 +96,13 @@ export function targetsFor(name: string): Target[] {
       if (e !== src) outs.push({ ext: e, label: e.toUpperCase() })
     return outs
   }
+  if (cat === 'spreadsheet') {
+    const outs: Target[] = []
+    if (src !== 'csv') outs.push({ ext: 'csv', label: 'CSV', note: 'erstes Tabellenblatt' })
+    if (src !== 'xlsx') outs.push({ ext: 'xlsx', label: 'Excel (.xlsx)' })
+    outs.push({ ext: 'pdf', label: 'PDF', note: 'als Tabelle' })
+    return outs
+  }
   if (cat === 'audio') {
     return not(AUDIO_TARGETS).map((ext) => ({ ext, label: ext.toUpperCase() }))
   }
@@ -115,6 +125,9 @@ export type Runner =
   | 'pdf-to-docx'
   | 'doc-to-pdf'
   | 'doc-to-text'
+  | 'sheet-to-csv'
+  | 'sheet-to-xlsx'
+  | 'sheet-to-pdf'
   | 'media'
   | 'none'
 
@@ -132,6 +145,12 @@ export function runnerFor(srcName: string, targetExt: string): Runner {
   if (cat === 'document') {
     if (t === 'pdf') return 'doc-to-pdf'
     return 'doc-to-text'
+  }
+  if (cat === 'spreadsheet') {
+    if (t === 'csv') return 'sheet-to-csv'
+    if (t === 'xlsx') return 'sheet-to-xlsx'
+    if (t === 'pdf') return 'sheet-to-pdf'
+    return 'none'
   }
   if (cat === 'audio' || cat === 'video') return 'media'
   return 'none'

@@ -1,4 +1,5 @@
 import { openPdf } from '../pdf/pdfjs'
+import { guessAndParse, serialize } from '../table/format'
 import { baseName, extOf, runnerFor } from './catalog'
 import { convertImage } from './image'
 import { convertMedia } from './media'
@@ -15,6 +16,7 @@ import {
   standaloneHtml,
   textToHtml
 } from './docs'
+import { gridToHtml, gridToXlsx, xlsxToGrid } from './sheets'
 
 export interface ConvertJob {
   id: string
@@ -165,6 +167,22 @@ export async function runJob(job: ConvertJob, cb: RunCallbacks = {}): Promise<Re
               : htmlToText(asHtml)
       }
       return [{ suffix: '', ext: t, bytes: enc(result) }]
+    }
+
+    case 'sheet-to-csv': {
+      const grid = src === 'csv' ? guessAndParse(dec(bytes)) : await xlsxToGrid(bytes)
+      return [{ suffix: '', ext: 'csv', bytes: enc(serialize(grid, 'csv', true)) }]
+    }
+
+    case 'sheet-to-xlsx': {
+      const grid = src === 'csv' ? guessAndParse(dec(bytes)) : await xlsxToGrid(bytes)
+      return [{ suffix: '', ext: 'xlsx', bytes: await gridToXlsx(grid) }]
+    }
+
+    case 'sheet-to-pdf': {
+      const grid = src === 'csv' ? guessAndParse(dec(bytes)) : await xlsxToGrid(bytes)
+      const html = standaloneHtml(gridToHtml(grid, baseName(job.name)), baseName(job.name))
+      return [{ suffix: '', ext: 'pdf', bytes: await window.api.htmlToPdf(html) }]
     }
 
     case 'media':

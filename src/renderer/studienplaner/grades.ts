@@ -85,6 +85,7 @@ function gpaOf(results: FachResult[]): GpaSummary {
   let counted = 0
   const missingEcts: string[] = []
   for (const r of results) {
+    if (r.excludeFromGpa) continue
     const g = fachGrade(r)
     if (g === null) continue
     if (!r.ects || r.ects <= 0) {
@@ -137,7 +138,7 @@ function fachDate(r: FachResult): string {
  * Quiz-Sicherheit und Teilleistungen. Leerer String, wenn nichts benotet ist.
  */
 export function buildTacticsDigest(results: FachResult[]): string {
-  const graded = results.filter((r) => fachGrade(r) !== null)
+  const graded = results.filter((r) => fachGrade(r) !== null && !r.excludeFromGpa)
   if (!graded.length) return ''
 
   const overall = overallGpa(results)

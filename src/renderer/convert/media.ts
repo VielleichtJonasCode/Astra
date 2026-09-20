@@ -38,7 +38,8 @@ const AUDIO_ARGS: Record<string, string[]> = {
   aac: ['-vn', '-c:a', 'aac', '-b:a', '192k'],
   wav: ['-vn', '-c:a', 'pcm_s16le'],
   flac: ['-vn', '-c:a', 'flac'],
-  ogg: ['-vn', '-c:a', 'libvorbis', '-q:a', '5']
+  ogg: ['-vn', '-c:a', 'libvorbis', '-q:a', '5'],
+  opus: ['-vn', '-c:a', 'libopus', '-b:a', '128k']
 }
 const VIDEO_ARGS: Record<string, string[]> = {
   mp4: ['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23', '-c:a', 'aac', '-b:a', '160k'],

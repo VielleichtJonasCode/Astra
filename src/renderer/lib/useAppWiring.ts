@@ -5,6 +5,7 @@ import { useUiStore, type ToolId } from '../store/uiStore'
 import { toast } from '../components/common/toast'
 import { requestDialog, type DialogId } from '../store/dialogStore'
 import { useShellStore } from '../store/shellStore'
+import { copySelectedAnnotations, pasteAnnotationsFromClipboard } from './annotationClipboard'
 
 // Schwergewichtige Module (PDF-Export-Pipeline usw.) erst bei Bedarf laden.
 const openViaDialog = (): Promise<void> => import('./fileActions').then((m) => m.openViaDialog())
@@ -107,10 +108,7 @@ function handleMenuAction(action: MenuAction): void {
       ui.setSearch({ open: true })
       break
     case 'edit.delete':
-      if (key && ui.selectedAnnotations.length) {
-        docs.removeAnnotations(key, ui.selectedAnnotations)
-        ui.clearSelection()
-      }
+      deleteSelectedAnnotations()
       break
 
     case 'view.zoomIn':
@@ -190,35 +188,57 @@ function rotateTarget(key: string, delta: 90 | -90): void {
   useDocStore.getState().rotatePages(key, targetPages(), delta)
 }
 
-/** Buchstaben-Kurzbefehle, die die native Menüleiste nicht abdeckt. */
+function deleteSelectedAnnotations(): void {
+  const key = useDocStore.getState().activeKey
+  const ui = useUiStore.getState()
+  if (key && ui.selectedAnnotations.length) {
+    useDocStore.getState().removeAnnotations(key, ui.selectedAnnotations)
+    ui.clearSelection()
+  }
+}
+
+/**
+ * Globale Tastatur-Handler außerhalb der nativen Menüleiste: Löschtaste,
+ * Kopieren/Einfügen von Objekten und Escape. Bewusst KEINE nackten
+ * Buchstaben-Kurzbefehle (ohne Cmd/Ctrl) mehr – die feuern unabhängig vom
+ * Fokus und überraschten beim Tippen in Textfeldern (z. B. "I" → Bild
+ * einfügen). Werkzeuge werden über Werkzeugleiste/Menü gewählt.
+ */
 function handleKey(e: KeyboardEvent): void {
   const target = e.target as HTMLElement
   if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
     return
   }
-  if (e.metaKey || e.ctrlKey || e.altKey) return
 
-  const ui = useUiStore.getState()
-  const key = e.key.toLowerCase()
-  if (key === 'i') {
-    e.preventDefault()
-    if (useDocStore.getState().activeKey) pickAndInsertImage()
+  const mod = e.metaKey || e.ctrlKey
+  if (mod && !e.altKey) {
+    const key = e.key.toLowerCase()
+    if (key === 'c' && copySelectedAnnotations()) {
+      e.preventDefault()
+      return
+    }
+    if (key === 'v' && pasteAnnotationsFromClipboard()) {
+      e.preventDefault()
+      return
+    }
     return
   }
-  const map: Record<string, ToolId> = {
-    v: 'select',
-    t: 'text',
-    e: 'editText',
-    b: 'redact',
-    h: 'highlight',
-    d: 'ink',
-    s: 'shape-rect',
-    n: 'note'
+  if (e.altKey) return
+
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    // Auf Mac-Tastaturen sendet die "Löschen"-Taste 'Backspace', die
+    // erweiterte Vorwärts-Löschen-Taste 'Delete' – beide sollen die
+    // ausgewählten Objekte entfernen. preventDefault nur bei offenem
+    // Dokument, damit die Taste außerhalb des Editors ihre übliche Wirkung
+    // behält.
+    if (useDocStore.getState().activeKey) {
+      e.preventDefault()
+      deleteSelectedAnnotations()
+    }
+    return
   }
-  if (map[key]) {
-    e.preventDefault()
-    ui.setTool(map[key])
-  } else if (e.key === 'Escape') {
+  if (e.key === 'Escape') {
+    const ui = useUiStore.getState()
     ui.setTool('select')
     ui.clearSelection()
   }

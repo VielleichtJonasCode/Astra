@@ -3,7 +3,7 @@ import { marked } from 'marked'
 import { openPdf } from '../pdf/pdfjs'
 import { bytesToArrayBuffer } from '../lib/bytes'
 
-const esc = (s: string): string =>
+export const esc = (s: string): string =>
   s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 
 /** Rahmen-HTML mit dezentem Druck-Stil. */

@@ -40,6 +40,7 @@ export function ExamResultForm({
     initial?.components?.length ? initial.components.map((c) => ({ ...c })) : [freshComponent()]
   )
   const [archive, setArchive] = useState(false)
+  const [excludeFromGpa, setExcludeFromGpa] = useState(initial?.excludeFromGpa ?? false)
 
   const patch = (id: string, p: Partial<GradeComponent>): void =>
     setComponents((cs) => cs.map((c) => (c.id === id ? { ...c, ...p } : c)))
@@ -57,7 +58,12 @@ export function ExamResultForm({
   const weightSum = components.reduce((n, c) => n + (c.weightPct || 0), 0)
 
   const save = async (): Promise<void> => {
-    await saveExamResult(semester, kurs, { components, ects: ects > 0 ? ects : undefined, archive })
+    await saveExamResult(semester, kurs, {
+      components,
+      ects: ects > 0 ? ects : undefined,
+      archive,
+      excludeFromGpa
+    })
     onSaved?.()
   }
 
@@ -161,6 +167,11 @@ export function ExamResultForm({
         {fg === null && <em> (noch keine benotete Teilleistung)</em>}
       </div>
 
+      <div className="examform__archive">
+        <Checkbox checked={excludeFromGpa} onChange={setExcludeFromGpa}>
+          Zählt nicht für den Bachelor-Schnitt (z.&nbsp;B. Vorkurs)
+        </Checkbox>
+      </div>
       <div className="examform__archive">
         <Checkbox checked={archive} onChange={setArchive}>
           Fach danach archivieren (Lernplan bleibt erhalten)

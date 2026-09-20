@@ -115,22 +115,48 @@
 .sp__course {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 2px;
   width: 100%;
+  padding: 2px 4px 2px 8px;
+  border-radius: var(--r-sm);
+}
+.sp__semrow:hover,
+.sp__course:hover {
+  background: var(--bg-hover);
+}
+/* Zeile ist jetzt ein div (Auswahl-Knopf + Löschen-Knopf nebeneinander,
+   kein Button-im-Button mehr) – das eigentliche Klickziel ist __btn. */
+.sp__semrow__btn,
+.sp__course__btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
   border: none;
   background: none;
   color: inherit;
   text-align: left;
-  padding: 7px 8px;
-  border-radius: var(--r-sm);
+  padding: 7px 4px;
+  font: inherit;
   font-size: var(--fs-13);
   cursor: pointer;
 }
-.sp__semrow {
+.sp__semrow__btn {
   font-weight: var(--fw-medium);
 }
-.sp__semrow:hover,
-.sp__course:hover {
+/* „Kurs hinzufügen" ist weiterhin ein einfacher Button ohne Löschen-Knopf. */
+.sp__course--add {
+  padding: 7px 8px;
+  border: none;
+  background: none;
+  color: var(--text-tertiary);
+  text-align: left;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-12);
+  cursor: pointer;
+}
+.sp__course--add:hover {
   background: var(--bg-hover);
 }
 .sp__semname,
@@ -146,10 +172,6 @@
 .sp__course.is-active {
   background: var(--accent-soft);
   color: var(--accent);
-}
-.sp__course--add {
-  color: var(--text-tertiary);
-  font-size: var(--fs-12);
 }
 .sp__count {
   font-size: var(--fs-11);

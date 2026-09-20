@@ -7,7 +7,8 @@ const MIME: Record<string, string> = {
   webp: 'image/webp',
   bmp: 'image/bmp',
   avif: 'image/avif',
-  gif: 'image/gif'
+  gif: 'image/gif',
+  svg: 'image/svg+xml'
 }
 
 async function decode(bytes: Uint8Array, srcMime: string): Promise<HTMLCanvasElement> {

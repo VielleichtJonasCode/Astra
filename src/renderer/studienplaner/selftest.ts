@@ -791,12 +791,23 @@ export function runStudienplanerSelfTest(): SelfTestResult {
         kurs: 'C',
         // kein ECTS – darf NICHT zählen, muss gemeldet werden
         components: [{ id: '3', title: 'K', mode: 'grade', grade: 1.0, weightPct: 100 }]
+      },
+      {
+        semester: 'SS 2025',
+        kurs: 'Vorkurs',
+        // bewusst ausgeschlossen – auch ohne ECTS nicht in missingEcts melden
+        excludeFromGpa: true,
+        components: [{ id: '4', title: 'K', mode: 'grade', grade: 5.0, weightPct: 100 }]
       }
     ]
     const g = overallGpa(results)
     checks.push([
       'overallGpa ects-weighted',
       g.gpa === 2.6 && g.credits === 15 && g.counted === 2 && g.missingEcts.join() === 'C'
+    ])
+    checks.push([
+      'overallGpa ignores excludeFromGpa entirely (not counted, not missingEcts)',
+      !g.missingEcts.includes('Vorkurs')
     ])
     checks.push(['semesterGpa scoped', semesterGpa(results, 'WS 2024').gpa === 2.6])
     checks.push(['semesterGpa other', semesterGpa(results, 'SS 2025').gpa === null])

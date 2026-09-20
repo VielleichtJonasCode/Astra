@@ -197,6 +197,11 @@
   margin: 0;
   font-size: var(--fs-13);
 }
+.se__fachheadright {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
 .se__semgroup {
   margin-bottom: 14px;
@@ -260,6 +265,15 @@
 .se__fachprep {
   font-size: var(--fs-11);
   color: var(--text-tertiary);
+}
+.se__fachexcl {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--bg-hover);
+  color: var(--text-tertiary);
+  font-size: var(--fs-10, 10px);
 }
 .se__fachopen {
   display: inline-flex;
